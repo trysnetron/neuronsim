@@ -34,9 +34,13 @@ function draw() {
     background(20);
 
     if (neurons.length > 0) {
-        // Oppdaterer og tegner nevroner + aksoner
+        // Oppdaterer pulser
         for (let i=0; i<neurons.length; ++i) {
-            neurons[i].update();
+            neurons[i].updatePulses();
+        }
+        // Oppdaterer potensialet og tegner nevroner + aksoner
+        for (let i=0; i<neurons.length; ++i) {
+            neurons[i].updatePotential();
             neurons[i].display();
         }
     }else{

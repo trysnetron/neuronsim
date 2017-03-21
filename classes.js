@@ -19,7 +19,7 @@ function Neuron(ix, iy) {
     //ArrayList<Pulse> pulses;
 };
 
-Neuron.prototype.update = function() {
+Neuron.prototype.updatePotential = function() {
     // Fyrer aksonet om potensialet er over grensepotensialet
     if (this.potential >= potentialThreshold) {
         // fyrer
@@ -40,6 +40,11 @@ Neuron.prototype.update = function() {
         }
     }
 
+    // oppdaterer potential_completion
+    this.potential_completion = constrain(this.potential/potentialThreshold, -1, 1);
+};
+
+Neuron.prototype.updatePulses = function() {
     // oppdaterer alle pulser
     // går gjennom listen med pulser baklengs for å unngå kjipe feil når pulser slettes
     for (let i=this.pulses.length-1; i>=0; --i) {
@@ -56,9 +61,6 @@ Neuron.prototype.update = function() {
             }
         }
     }
-
-    // oppdaterer potential_completion
-    this.potential_completion = constrain(this.potential/potentialThreshold, -1, 1);
 };
 
 Neuron.prototype.display = function() {
