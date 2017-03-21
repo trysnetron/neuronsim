@@ -99,10 +99,16 @@ Neuron.prototype.display = function() {
 
 Neuron.prototype.inhibitorFire = function() {
     this.potential -= potentialPulseDecrement;
+    if (this.potential < -potentialLimit) {
+        this.potential = -potentialLimit;
+    }
 };
 
 Neuron.prototype.exitatorFire = function() {
     this.potential += potentialPulseIncrement;
+    if (this.potential > potentialLimit) {
+        this.potential = potentialLimit;
+    }
 };
 
 Neuron.prototype.newPulse = function() {
