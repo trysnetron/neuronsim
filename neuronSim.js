@@ -14,6 +14,9 @@ var tool = 0;
 
 function setup() {
     createCanvas(200, 200);
+
+    // Skrur av høyreklikk-menyen
+    document.body.oncontextmenu = function() {return false;};
     
     updateCanvasSize();
 
@@ -93,7 +96,11 @@ function mousePressed() {
             tool = floor(mouseX/toolBannerHeight);
         }
     } else {
-        toolList[tool].click();
+        if (mouseButton == LEFT) {
+            toolList[tool].lclick();
+        } else if (mouseButton == RIGHT) {
+            toolList[tool].rclick();
+        } 
     }
 };
 
