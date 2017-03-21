@@ -69,9 +69,22 @@ fireTool.selectedNeurons = [];
 
 fireTool.lclick = function() {
     let neuron = mouseOverNeuron();
+    let neuronInGroup = false;
     if (neuron != null) {
-        
-        neuron.newPulse();
+        for (let i=0; i<this.selectedNeurons.length; ++i) {
+            if (this.selectedNeurons[i] == neuron) {
+                neuronInGroup = true;
+                break;
+            }
+        }
+        if (neuronInGroup) {
+            // Får alle nevroner i gruppen til å fyre
+            for (let i=0; i<this.selectedNeurons.length; ++i) {
+                this.selectedNeurons[i].newPulse();
+            }
+        } else {
+            neuron.newPulse();
+        }
     }
 };
 fireTool.rclick = function() {
