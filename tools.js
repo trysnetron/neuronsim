@@ -6,6 +6,7 @@ function Tool() {
     this.release = function() {};
     this.abort = function() {};
     this.cursor = function() {};
+    this.graphics = function() {};
     this.icon = function(x, y) {};
     this.info = "";
 };
@@ -101,9 +102,9 @@ fireTool.rclick = function() {
         this.selectedNeurons.push(neuron);
     }
 };
-fireTool.cursor = function() {
+fireTool.graphics = function() {
     noFill();
-    stroke(240, 200, 0);
+    stroke(180, 140, 0);
     for (let i=0; i<this.selectedNeurons.length; ++i) {
         ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, NEURON_RADIUS*4);
     }
@@ -114,7 +115,7 @@ fireTool.icon = function(x, y) {
     line(x + toolBannerHeight*0.6, y + toolBannerHeight*0.4, x + toolBannerHeight*0.4, y + toolBannerHeight*0.6);
     line(x + toolBannerHeight*0.4, y + toolBannerHeight*0.6, x + toolBannerHeight*0.8, y + toolBannerHeight*0.8);
 };
-fireTool.info = "Click a neuron to make it fire.";
+fireTool.info = "Left click a neuron to make it fire.\nRight click a neuron to include/remove it from firing group.";
 
 ////////////////////////////////////////////////
 // Lager nye nevroner //////////////////////////

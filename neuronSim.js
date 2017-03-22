@@ -50,6 +50,11 @@ function draw() {
         textAlign(LEFT, TOP);
     }
 
+    // Tegner grafikk fra verktøy
+    for (let i=0; i<toolList.length; ++i) {
+        toolList[i].graphics();
+    } 
+
     // Tegner verktøy-banner
     noStroke();
     fill(20);
@@ -71,8 +76,10 @@ function draw() {
         line(toolBannerHeight*(i+1), 0, toolBannerHeight*(1+i), toolBannerHeight);
     }
     noStroke();
-    fill(240);
+    fill(160);
     text(toolList[tool].info, 5, toolBannerHeight + 5);
+    
+    // Tegner verktøyspesifik peker 
     if (mouseY > toolBannerHeight) {
         toolList[tool].cursor();
     }
