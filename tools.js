@@ -91,15 +91,17 @@ fireTool.lclick = function() {
 fireTool.rclick = function() {
     let neuron = mouseOverNeuron();
     let alreadyInList = false;
-    for (let i=0; i<this.selectedNeurons.length; ++i) {
-        if (this.selectedNeurons[i] == neuron) {
-            this.selectedNeurons.splice(i, 1);
-            alreadyInList = true;
-            break;
+    if (neuron != null) {
+        for (let i=0; i<this.selectedNeurons.length; ++i) {
+            if (this.selectedNeurons[i] == neuron) {
+                this.selectedNeurons.splice(i, 1);
+                alreadyInList = true;
+                break;
+            }
         }
-    }
-    if (!alreadyInList) {
-        this.selectedNeurons.push(neuron);
+        if (!alreadyInList) {
+            this.selectedNeurons.push(neuron);
+        }
     }
 };
 fireTool.graphics = function() {
