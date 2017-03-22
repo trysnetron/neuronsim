@@ -1,13 +1,11 @@
 // Konstanter
-const potentialThreshold = 100;
-const potentialPulseIncrement = 80;
-const potentialPulseDecrement = 80;
-const potentialLimit = 200;
-const potentialStabilizeDecrement = 1;
-const toolBannerHeight = 40;
-const pulseDuration = 1.5 * 60; // sekunder * framerate
-
-
+var potentialThreshold = 100;
+var potentialPulseIncrement = 80;
+var potentialPulseDecrement = 80;
+var potentialLimit = 200;
+var potentialStabilizeDecrement = 1;
+var toolBannerHeight = 40;
+var pulseDuration = 1 * 60; // sekunder * framerate
 
 const NEURON_RADIUS = 20;
 

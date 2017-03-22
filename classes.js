@@ -20,6 +20,13 @@ function Neuron(ix, iy) {
 };
 
 Neuron.prototype.updatePotential = function() {
+    // Sjekker først om potensialet er utenfor grensene
+    if (this.potential > potentialLimit) {
+        this.potential = potentialLimit;
+    }else if (this.potential < -potentialLimit) {
+        this.potential = -potentialLimit;
+    }
+    
     // Fyrer aksonet om potensialet er over grensepotensialet
     if (this.potential >= potentialThreshold) {
         // fyrer
@@ -99,16 +106,10 @@ Neuron.prototype.display = function() {
 
 Neuron.prototype.inhibitorFire = function() {
     this.potential -= potentialPulseDecrement;
-    if (this.potential < -potentialLimit) {
-        this.potential = -potentialLimit;
-    }
 };
 
 Neuron.prototype.exitatorFire = function() {
     this.potential += potentialPulseIncrement;
-    if (this.potential > potentialLimit) {
-        this.potential = potentialLimit;
-    }
 };
 
 Neuron.prototype.newPulse = function() {
