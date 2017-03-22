@@ -41,3 +41,43 @@ function findSynapse(id) {
         }
     }
 }
+
+function saveNetwork() {
+    let save = {};
+    save.neurons = [];
+    for (let i=0; i<neurons.length; ++i) {
+        save.neurons.push({
+            x: neurons[i].x,
+            y: neurons[i].y
+        });
+    }
+    save = JSON.stringify(save);
+    
+    if (typeof(Storage) !== undefined) {
+        localStorage.save = save;
+    }else{
+        return false;
+    }
+    return true;
+}   
+
+function loadNetwork() {
+    if (typeof(Storage) !== undefined) {
+        if (localStorage.save !== undefined) {
+            let saveObj = JSON.parse(localStorage.save);
+
+            //tømmer det eksisterende nettverket
+            for (let i=neurons.length-1; i>=0; --i) {
+                neurons[i].delete();
+            }
+            for (let i=0; i<saveObj.neurons.length; ++i) {
+                neurons.push(new Neuron(saveObj.neurons[i].x, saveObj.neurons[i].y));
+            }
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+    return true;
+}
