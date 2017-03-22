@@ -115,6 +115,15 @@ Neuron.prototype.constrainPosition = function() {
     if (this.y > window.innerHeight) {this.y = window.innerHeight;}
 };
 
+Neuron.prototype.getId = function() {
+    for (let i=0; i<neurons.length; ++i) {
+        if (neurons[i] === this) {
+            return i;
+        }
+    }
+    return -1;
+};
+
 Neuron.prototype.delete = function() {
     //fjerner alle aksoner
     for (let i=this.axons.length-1; i>=0; --i) {

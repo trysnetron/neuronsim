@@ -46,7 +46,7 @@ function draw() {
         noStroke();
         fill(160);
         textAlign(CENTER, CENTER);
-        text("Start by creating some neurons (press 3),\nthen make some synapses between them (press 4 and 5).",width/2, height/2);
+        text("Start by creating some neurons (press 3),\nthen make some synapses between them (press 4 and 5).\n\nPress 's' to save and 'l' to load.",width/2, height/2);
         textAlign(LEFT, TOP);
     }
 
@@ -85,6 +85,14 @@ function keyPressed() {
                 toolList[tool].abort();
                 tool = keyCode - 49;
             }
+        }
+    } else if (keyCode == 83) {
+        if (saveNetwork()) {
+            console.log("Network saved");
+        }
+    } else if (keyCode == 76) {
+        if (loadNetwork()) {
+            console.log("Network loaded");
         }
     }
 };    
