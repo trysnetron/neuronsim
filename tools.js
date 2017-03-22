@@ -1,10 +1,12 @@
 // Template-verktøy, alle verktøy skal ta utgangspunkt i denne
 function Tool() {
-    this.click = function() {};
+    this.lclick = function() {};
+    this.rclick = function() {};
     this.drag = function() {};
     this.release = function() {};
     this.abort = function() {};
     this.cursor = function() {};
+    this.graphics = function() {};
     this.icon = function(x, y) {};
     this.info = "";
 };
@@ -20,7 +22,7 @@ moveTool.neuron = null;
 moveTool.dragging = false;
 moveTool.offsetX = 0;
 moveTool.offsetY = 0;
-moveTool.click = function() {
+moveTool.lclick = function() {
     this.neuron = mouseOverNeuron();
     if (this.neuron != null) {
         this.dragging = true;
@@ -64,11 +66,47 @@ moveTool.info = "Click and drag a neuron to move it.";
 // Fyrer nevroner //////////////////////////////
 ////////////////////////////////////////////////
 const fireTool = new Tool();
+fireTool.selectedNeurons = [];
 
-fireTool.click = function() {
-    this.neuron = mouseOverNeuron();
-    if (this.neuron != null) {
-        this.neuron.newPulse();
+fireTool.lclick = function() {
+    let neuron = mouseOverNeuron();
+    let neuronInGroup = false;
+    if (neuron != null) {
+        for (let i=0; i<this.selectedNeurons.length; ++i) {
+            if (this.selectedNeurons[i] == neuron) {
+                neuronInGroup = true;
+                break;
+            }
+        }
+        if (neuronInGroup) {
+            // Får alle nevroner i gruppen til å fyre
+            for (let i=0; i<this.selectedNeurons.length; ++i) {
+                this.selectedNeurons[i].newPulse();
+            }
+        } else {
+            neuron.newPulse();
+        }
+    }
+};
+fireTool.rclick = function() {
+    let neuron = mouseOverNeuron();
+    let alreadyInList = false;
+    for (let i=0; i<this.selectedNeurons.length; ++i) {
+        if (this.selectedNeurons[i] == neuron) {
+            this.selectedNeurons.splice(i, 1);
+            alreadyInList = true;
+            break;
+        }
+    }
+    if (!alreadyInList) {
+        this.selectedNeurons.push(neuron);
+    }
+};
+fireTool.graphics = function() {
+    noFill();
+    stroke(180, 140, 0);
+    for (let i=0; i<this.selectedNeurons.length; ++i) {
+        ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, NEURON_RADIUS*4);
     }
 };
 fireTool.icon = function(x, y) {
@@ -77,14 +115,14 @@ fireTool.icon = function(x, y) {
     line(x + toolBannerHeight*0.6, y + toolBannerHeight*0.4, x + toolBannerHeight*0.4, y + toolBannerHeight*0.6);
     line(x + toolBannerHeight*0.4, y + toolBannerHeight*0.6, x + toolBannerHeight*0.8, y + toolBannerHeight*0.8);
 };
-fireTool.info = "Click a neuron to make it fire.";
+fireTool.info = "Left click a neuron to make it fire.\nRight click a neuron to include/remove it from firing group.";
 
 ////////////////////////////////////////////////
 // Lager nye nevroner //////////////////////////
 ////////////////////////////////////////////////
 const createTool = new Tool();
     
-createTool.click = function() {
+createTool.lclick = function() {
     neurons.push(new Neuron(mouseX, mouseY));
 };
 createTool.cursor = function() {
@@ -106,7 +144,7 @@ createTool.info = "Click to create a neuron.";
 const createExibitorSynapseTool = new Tool();
 
 createExibitorSynapseTool.masterNeuron = null;
-createExibitorSynapseTool.click = function() {
+createExibitorSynapseTool.lclick = function() {
     let neuron = mouseOverNeuron();
     if (neuron != null) {
         if (this.masterNeuron == null) {
@@ -155,7 +193,7 @@ createExibitorSynapseTool.info = "Click a neuron to start making a synapse, and 
 const createInhibitorSynapseTool = new Tool();
 
 createInhibitorSynapseTool.masterNeuron = null;
-createInhibitorSynapseTool.click = function() {
+createInhibitorSynapseTool.lclick = function() {
     let neuron = mouseOverNeuron();
     if (neuron != null) {
         if (this.masterNeuron == null) {
@@ -203,7 +241,7 @@ createInhibitorSynapseTool.info = "Click a neuron to start making an synapse, an
 ////////////////////////////////////////////////
 const deleteTool = new Tool();
 
-deleteTool.click = function() {
+deleteTool.lclick = function() {
     let neuron = mouseOverNeuron();
     if (neuron != null) {
         //sletter nevron

@@ -15,6 +15,9 @@ var tool = 0;
 
 function setup() {
     createCanvas(200, 200);
+
+    // Skrur av høyreklikk-menyen
+    document.body.oncontextmenu = function() {return false;};
     
     updateCanvasSize();
 
@@ -48,9 +51,14 @@ function draw() {
         noStroke();
         fill(160);
         textAlign(CENTER, CENTER);
-        text("Start by creating some neurons (press 3),\nthen make some synapses between them (press 4 and 5).",width/2, height/2);
+        text("Start by creating some neurons (press 3),\nthen make some synapses between them (press 4 and 5).\n\nPress 's' to save and 'l' to load.",width/2, height/2);
         textAlign(LEFT, TOP);
     }
+
+    // Tegner grafikk fra verktøy
+    for (let i=0; i<toolList.length; ++i) {
+        toolList[i].graphics();
+    } 
 
     // Tegner verktøy-banner
     noStroke();
@@ -73,8 +81,10 @@ function draw() {
         line(toolBannerHeight*(i+1), 0, toolBannerHeight*(1+i), toolBannerHeight);
     }
     noStroke();
-    fill(240);
+    fill(160);
     text(toolList[tool].info, 5, toolBannerHeight + 5);
+    
+    // Tegner verktøyspesifik peker 
     if (mouseY > toolBannerHeight) {
         toolList[tool].cursor();
     }
@@ -88,6 +98,14 @@ function keyPressed() {
                 tool = keyCode - 49;
             }
         }
+    } else if (keyCode == 83) {
+        if (saveNetwork()) {
+            console.log("Network saved");
+        }
+    } else if (keyCode == 76) {
+        if (loadNetwork()) {
+            console.log("Network loaded");
+        }
     }
 };    
 
@@ -98,7 +116,11 @@ function mousePressed() {
             tool = floor(mouseX/toolBannerHeight);
         }
     } else {
-        toolList[tool].click();
+        if (mouseButton == LEFT) {
+            toolList[tool].lclick();
+        } else if (mouseButton == RIGHT) {
+            toolList[tool].rclick();
+        } 
     }
 };
 

@@ -41,3 +41,86 @@ function findSynapse(id) {
         }
     }
 }
+
+function saveNetwork() {
+    let save = {};
+    save.neurons0 = [];
+    for (let i=0; i<neurons.length; ++i) {
+        let neuron = {
+            x: neurons[i].x,
+            y: neurons[i].y,
+            slaves: [],
+            dendriteType: []
+        };
+        for (let j=0; j<neurons[i].axons.length; ++j) {
+            neuron.slaves.push(neurons[i].axons[j].slave.getId());
+            neuron.dendriteType.push(neurons[i].axons[j].type);
+        }
+        save.neurons0.push(neuron);
+    }
+    save = JSON.stringify(save);
+    
+    if (confirm("This will override the current save!")) {
+        if (typeof(Storage) !== undefined) {
+            localStorage.save = save;
+        }else{
+            return false;
+        }
+    } else {
+        return false;
+    }
+    return true;
+}   
+
+function loadNetwork() {
+    if (typeof(Storage) !== undefined) {
+        if (localStorage.save !== undefined) {
+            if (neurons.length) {
+                if (!confirm("Are you sure? All your current work will be lost!")) {
+                    return false;
+                }
+            }
+
+            let saveObj = JSON.parse(localStorage.save);
+
+            //tømmer det eksisterende nettverket
+            for (let i=neurons.length-1; i>=0; --i) {
+                neurons[i].delete();
+            }
+
+            // lager nevroner fra lagringsfil
+            for (let i=0; i<saveObj.neurons0.length; ++i) {
+                neurons.push(new Neuron(saveObj.neurons0[i].x, saveObj.neurons0[i].y));
+            }
+            // lager synapser
+            for (let i=0; i<saveObj.neurons0.length; ++i) {
+                for (let j=0; j<saveObj.neurons0[i].slaves.length; ++j) {
+                    new Synapse(neurons[i], neurons[saveObj.neurons0[i].slaves[j]], saveObj.neurons0[i].dendriteType[j]);
+                }
+            }
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+    return true;
+};
+
+function getSaveInfo() {
+    if (typeof(Storage) !== undefined) {
+        if (localStorage.save !== undefined) {
+            let saveObj = JSON.parse(localStorage.save);
+            let neuronNum = saveObj.neurons0.length;
+            let synapseNum = 0;
+            for (let i=0; i<saveObj.neurons0.length; ++i) {
+                synapseNum += saveObj.neurons0[i].slaves.length;
+            }
+            return (neuronNum + " neurons, " + synapseNum + " synapses.");
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+};
