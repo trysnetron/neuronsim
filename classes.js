@@ -12,43 +12,78 @@ function Neuron(ix, iy) {
     this.potential = 0;
     this.potential_completion = 0;
     
+    this.spontaneousActivity = false;
+    this.frequency = baseFrequency;
+    this.frequencyCounter = this.frequency*60;
+
     this.axons = [];
     this.dendrites = [];
     
     this.pulses = [];
-    //ArrayList<Pulse> pulses;
 };
 
 Neuron.prototype.updatePotential = function() {
     // Sjekker først om potensialet er utenfor grensene
-    if (this.potential > potentialLimit) {
-        this.potential = potentialLimit;
-    }else if (this.potential < -potentialLimit) {
-        this.potential = -potentialLimit;
-    }
-    
-    // Fyrer aksonet om potensialet er over grensepotensialet
-    if (this.potential >= potentialThreshold) {
-        // fyrer
-        this.newPulse();
-        this.potential = -potentialStabilizeDecrement;
-    }
-    
-    // Får potensialet til å nærme seg hvilepotensialet (0) 
-    if (this.potential > 0) {
-        this.potential -= potentialStabilizeDecrement;
-        if (this.potential < 0) {
-            this.potential = 0;
+    if (this.spontaneousActivity) {
+        // Sørger for at egenfrekvensen ikke blir negativ
+        if (this.frequency < 0) {
+            this.frequency = 0;
         }
-    }else if (this.potential < 0) {
-        this.potential += potentialStabilizeDecrement;
-        if (this.potential > 0) {
-            this.potential = 0;
-        }
-    }
 
-    // oppdaterer potential_completion
-    this.potential_completion = constrain(this.potential/potentialThreshold, -1, 1);
+        if (this.frequencyCounter > 0) {
+            --this.frequencyCounter;
+        } else {
+            this.newPulse();
+            this.frequencyCounter = round(60/this.frequency);
+        }
+        
+        // stabiliserer frekvensen
+        if (this.frequency > baseFrequency) {
+            this.frequency -= frequencyStabilize/60;
+            if (this.frequency < baseFrequency) {
+                this.frequency = baseFrequency;
+            }
+        }else if (this.frequency < baseFrequency) {
+            this.frequency += frequencyStabilize/60;
+            if (this.frequency > baseFrequency) {
+                this.frequency = baseFrequency;
+            }
+        }
+    }else {
+        // Sørger for at ikke potensialet er utenfor grensene
+        if (this.potential > potentialLimit) {
+            this.potential = potentialLimit;
+        }else if (this.potential < -potentialLimit) {
+            this.potential = -potentialLimit;
+        }
+        
+        // Fyrer aksonet om potensialet er over grensepotensialet
+        if (this.potential >= potentialThreshold) {
+            // fyrer
+            this.newPulse();
+            this.potential = -linearDecayCoefficient;
+        }
+        
+        // Får potensialet til å nærme seg hvilepotensialet (0) 
+        if (decayMode == "linear") {
+            if (this.potential > 0) {
+                this.potential -= linearDecayCoefficient;
+                if (this.potential < 0) {
+                    this.potential = 0;
+                }
+            } else if (this.potential < 0) {
+                this.potential += linearDecayCoefficient;
+                if (this.potential > 0) {
+                    this.potential = 0;
+                }
+            }
+        } else if (decayMode == "exponential") {
+            this.potential *= exponentialDecayBase;
+        }    
+
+        // oppdaterer potential_completion
+        this.potential_completion = constrain(this.potential/potentialThreshold, -1, 1);
+    }
 };
 
 Neuron.prototype.updatePulses = function() {
@@ -73,22 +108,29 @@ Neuron.prototype.updatePulses = function() {
 Neuron.prototype.display = function() {
     // Tegner seg selv
     noFill();
-    if (this.pulses.length) {
-        stroke(240, 200, 0);
+    if (!this.spontaneousActivity) {
+        if (this.pulses.length) {
+            stroke(240, 200, 0);
+        } else {
+            stroke(240);   
+        }
+        ellipse(this.x, this.y, neuronRadius*2, neuronRadius*2);
+        
+        //Tegner indre ring som indikerer potensial-nivå
+        noStroke();
+        if (this.potential > 0) {
+            fill(0, 120, 0);
+            ellipse(this.x, this.y, 2*neuronRadius*this.potential_completion, 2*neuronRadius*this.potential_completion);
+        } else if (this.potential < 0) {
+            fill(120, 0, 0);
+            ellipse(this.x, this.y, 2*neuronRadius*-this.potential_completion, 2*neuronRadius*-this.potential_completion);  
+        }  
     } else {
-        stroke(240);   
+        stroke(120, 120, 240);
+        ellipse(this.x, this.y, neuronRadius*2, neuronRadius*2);
+        ellipse(this.x, this.y, neuronRadius*1.6*abs(sin(PI*this.frequencyCounter/round(60/this.frequency))), neuronRadius*1.6*abs(sin(PI*this.frequencyCounter/round(60/this.frequency)))); 
     }
-    ellipse(this.x, this.y, NEURON_RADIUS*2, NEURON_RADIUS*2);
-    
-    //Tegner indre ring som indikerer potensial-nivå
-    noStroke();
-    if (this.potential > 0) {
-        fill(0, 120, 0);
-        ellipse(this.x, this.y, 2*NEURON_RADIUS*this.potential_completion, 2*NEURON_RADIUS*this.potential_completion);
-    }else if (this.potential < 0) {
-        fill(120, 0, 0);
-        ellipse(this.x, this.y, 2*NEURON_RADIUS*-this.potential_completion, 2*NEURON_RADIUS*-this.potential_completion);  
-    }  
+
     for (let i=0; i<this.axons.length; ++i) {
         // Tegner aksoner
         this.axons[i].display();
@@ -105,11 +147,19 @@ Neuron.prototype.display = function() {
 };
 
 Neuron.prototype.inhibitorFire = function() {
-    this.potential -= potentialPulseDecrement;
+    if (!this.spontaneousActivity) {
+        this.potential -= potentialPulseDecrement;
+    } else {
+        this.frequency -= frequencyDecrement;
+    }
 };
 
 Neuron.prototype.exitatorFire = function() {
-    this.potential += potentialPulseIncrement;
+    if (!this.spontaneousActivity) {
+        this.potential += potentialPulseIncrement;
+    } else {
+        this.frequency += frequencyIncrement;
+    }
 };
 
 Neuron.prototype.newPulse = function() {
@@ -177,15 +227,15 @@ Synapse.prototype.display = function() {
         stroke(240, 0, 0);
     }
     noFill();
-    line(this.master.x + normalizedX*NEURON_RADIUS*1.5, this.master.y + normalizedY*NEURON_RADIUS*1.5, this.slave.x - normalizedX*NEURON_RADIUS*1.5, this.slave.y - normalizedY*NEURON_RADIUS*1.5);
+    line(this.master.x + normalizedX*neuronRadius*1.5, this.master.y + normalizedY*neuronRadius*1.5, this.slave.x - normalizedX*neuronRadius*1.5, this.slave.y - normalizedY*neuronRadius*1.5);
     //ellipse(this.slave.x - normalizedX*NEURON_RADIUS*1.5, this.slave.y - normalizedY*NEURON_RADIUS*1.5, 10, 10);
     if (this.type) {
          
-        line(this.slave.x - normalizedX*NEURON_RADIUS*1.5, this.slave.y - normalizedY*NEURON_RADIUS*1.5, this.slave.x - normalizedX*(NEURON_RADIUS*1.5 + 8) + normalizedY*15, this.slave.y - normalizedY*(NEURON_RADIUS*1.5 + 8) - normalizedX*15);
-        line(this.slave.x - normalizedX*NEURON_RADIUS*1.5, this.slave.y - normalizedY*NEURON_RADIUS*1.5, this.slave.x - normalizedX*(NEURON_RADIUS*1.5 + 8) - normalizedY*15, this.slave.y - normalizedY*(NEURON_RADIUS*1.5 + 8) + normalizedX*15);
+        line(this.slave.x - normalizedX*neuronRadius*1.5, this.slave.y - normalizedY*neuronRadius*1.5, this.slave.x - normalizedX*(neuronRadius*1.5 + 8) + normalizedY*15, this.slave.y - normalizedY*(neuronRadius*1.5 + 8) - normalizedX*15);
+        line(this.slave.x - normalizedX*neuronRadius*1.5, this.slave.y - normalizedY*neuronRadius*1.5, this.slave.x - normalizedX*(neuronRadius*1.5 + 8) - normalizedY*15, this.slave.y - normalizedY*(neuronRadius*1.5 + 8) + normalizedX*15);
     } else {
-        line(this.slave.x - normalizedX*NEURON_RADIUS*1.5, this.slave.y - normalizedY*NEURON_RADIUS*1.5, this.slave.x - normalizedX*(NEURON_RADIUS*1.5 - 8) + normalizedY*15, this.slave.y - normalizedY*(NEURON_RADIUS*1.5 - 8) - normalizedX*15);
-        line(this.slave.x - normalizedX*NEURON_RADIUS*1.5, this.slave.y - normalizedY*NEURON_RADIUS*1.5, this.slave.x - normalizedX*(NEURON_RADIUS*1.5 - 8) - normalizedY*15, this.slave.y - normalizedY*(NEURON_RADIUS*1.5 - 8) + normalizedX*15);
+        line(this.slave.x - normalizedX*neuronRadius*1.5, this.slave.y - normalizedY*neuronRadius*1.5, this.slave.x - normalizedX*(neuronRadius*1.5 - 8) + normalizedY*15, this.slave.y - normalizedY*(neuronRadius*1.5 - 8) - normalizedX*15);
+        line(this.slave.x - normalizedX*neuronRadius*1.5, this.slave.y - normalizedY*neuronRadius*1.5, this.slave.x - normalizedX*(neuronRadius*1.5 - 8) - normalizedY*15, this.slave.y - normalizedY*(neuronRadius*1.5 - 8) + normalizedX*15);
     }    
 };
 

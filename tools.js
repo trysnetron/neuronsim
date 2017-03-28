@@ -108,7 +108,7 @@ fireTool.graphics = function() {
     noFill();
     stroke(180, 140, 0);
     for (let i=0; i<this.selectedNeurons.length; ++i) {
-        ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, NEURON_RADIUS*4);
+        ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, neuronRadius*4);
     }
 };
 fireTool.icon = function(x, y) {
@@ -127,10 +127,15 @@ const createTool = new Tool();
 createTool.lclick = function() {
     neurons.push(new Neuron(mouseX, mouseY));
 };
+createTool.rclick = function() {
+    let neuron = new Neuron(mouseX, mouseY);
+    neuron.spontaneousActivity = true;
+    neurons.push(neuron);
+};
 createTool.cursor = function() {
     noFill();
     stroke(120);
-    ellipse(mouseX, mouseY, NEURON_RADIUS*2, NEURON_RADIUS*2);
+    ellipse(mouseX, mouseY, neuronRadius*2, neuronRadius*2);
 };
 createTool.icon = function(x, y) {
     noFill();
@@ -138,7 +143,7 @@ createTool.icon = function(x, y) {
     line(x + toolBannerHeight*0.1, y + toolBannerHeight*0.2, x + toolBannerHeight*0.3, y + toolBannerHeight*0.2);
     line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.1, x + toolBannerHeight*0.2, y + toolBannerHeight*0.3);
 };
-createTool.info = "Click to create a neuron.";
+createTool.info = "Left click to create a neuron.\nRight click to create a neuron with a base frequency.";
 
 ////////////////////////////////////////////////
 // Lager nye synapser (akson + dendritt) ///////
@@ -263,7 +268,7 @@ deleteTool.cursor = function() {
     if (neuron != null) {
         noStroke();
         fill(240, 0, 0, 50);
-        ellipse(neuron.x, neuron.y, NEURON_RADIUS*2 + 20, NEURON_RADIUS*2 + 20);
+        ellipse(neuron.x, neuron.y, neuronRadius*2 + 20, neuronRadius*2 + 20);
     }else{
         let synapse = mouseOverSynapse();
         if (synapse != null) {
