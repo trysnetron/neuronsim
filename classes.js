@@ -30,11 +30,11 @@ Neuron.prototype.updatePotential = function() {
             this.frequency = 0;
         }
 
-        if (this.frequencyCounter > 0) {
-            --this.frequencyCounter;
+        if (this.frequencyCounter < round(60/this.frequency)) {
+            ++this.frequencyCounter;
         } else {
             this.newPulse();
-            this.frequencyCounter = round(60/this.frequency);
+            this.frequencyCounter = 0;
         }
         
         // stabiliserer frekvensen
@@ -128,6 +128,7 @@ Neuron.prototype.display = function() {
     } else {
         stroke(120, 120, 240);
         ellipse(this.x, this.y, neuronRadius*2, neuronRadius*2);
+        stroke(120, 120, 240, 120);
         ellipse(this.x, this.y, neuronRadius*1.6*abs(sin(PI*this.frequencyCounter/round(60/this.frequency))), neuronRadius*1.6*abs(sin(PI*this.frequencyCounter/round(60/this.frequency)))); 
     }
 

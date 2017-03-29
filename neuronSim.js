@@ -5,7 +5,7 @@ var potentialPulseDecrement = 80;
 var potentialLimit = 200;
 var pulseDuration = 1 * 60; // sekunder * framerate
 var baseFrequency = 2; // Hz
-var frequencyStabilize = 2; // Hz/s
+var frequencyStabilize = 1; // Hz/s
 var frequencyIncrement = 1;
 var frequencyDecrement = 1;
 
