@@ -23,7 +23,7 @@ var preferences = false;
 var toolBannerHeight = 40;
 const neuronRadius = 20;
 
-const toolList = [moveTool, fireTool, createTool, createExibitorSynapseTool, createInhibitorSynapseTool, deleteTool];
+const toolList = [moveTool, fireTool, lightTool, createTool, createExibitorSynapseTool, createInhibitorSynapseTool, deleteTool];
 var tool = 0;
 
 

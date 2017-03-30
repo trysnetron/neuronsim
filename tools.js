@@ -284,3 +284,51 @@ deleteTool.icon = function(x, y) {
     line(x + toolBannerHeight*0.3, y + toolBannerHeight*0.3, x + toolBannerHeight*0.7, y + toolBannerHeight*0.7);
 };
 deleteTool.info = "Click a neuron or a synapse to delete it.";
+
+/////////////////////////////////////////////
+// Lommelykt /////////////////////////
+////////////////////////////////////////////////
+const lightTool = new Tool();
+
+lightTool.pressing = false;
+lightTool.radius = 100;
+lightTool.firePeriod = 0.1;
+lightTool.fireCounter = 0;
+
+lightTool.lclick = function() {
+    this.pressing = true;
+};
+lightTool.cursor = function() {
+    noStroke();
+    if (this.pressing) {
+        if (this.fireCounter < 60 *this.firePeriod) {
+            ++this.fireCounter;
+        } else {
+            for (let i=0; i<neurons.length; ++i) {
+                if (pointOverCircle(neurons[i].x, neurons[i].y, mouseX, mouseY, this.radius)) {
+                    neurons[i].newPulse();
+                } 
+            }
+            this.fireCounter = 0;
+        }
+        fill(240, 240, 0, 10);
+    } else {
+        fill(240, 240, 0, 40);
+    }
+    ellipse(mouseX, mouseY, this.radius*2, this.radius*2);
+};
+lightTool.release = function() {
+    this.pressing = false;
+}
+
+lightTool.icon = function(x, y) {
+    line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.2, x + toolBannerHeight*0.4, y + toolBannerHeight*0.4);
+    line(x + toolBannerHeight*0.5, y + toolBannerHeight*0.1, x + toolBannerHeight*0.5, y + toolBannerHeight*0.3);
+    line(x + toolBannerHeight*0.8, y + toolBannerHeight*0.2, x + toolBannerHeight*0.6, y + toolBannerHeight*0.4);
+    line(x + toolBannerHeight*0.9, y + toolBannerHeight*0.5, x + toolBannerHeight*0.7, y + toolBannerHeight*0.5);
+    line(x + toolBannerHeight*0.8, y + toolBannerHeight*0.8, x + toolBannerHeight*0.6, y + toolBannerHeight*0.6);
+    line(x + toolBannerHeight*0.5, y + toolBannerHeight*0.9, x + toolBannerHeight*0.5, y + toolBannerHeight*0.7);
+    line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.8, x + toolBannerHeight*0.4, y + toolBannerHeight*0.6);
+    line(x + toolBannerHeight*0.1, y + toolBannerHeight*0.5, x + toolBannerHeight*0.3, y + toolBannerHeight*0.5);
+};
+lightTool.info = "Click and hold to make all neurons within range to fire.";
