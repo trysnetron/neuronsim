@@ -7,3 +7,12 @@
 body {
     overflow: hidden;
 }
+
+button {
+    width: 240px;
+    height: 40px;
+}
+
+button:focus {
+    outline: none;
+}

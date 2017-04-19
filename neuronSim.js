@@ -26,6 +26,8 @@ const neuronRadius = 20;
 const toolList = [moveTool, fireTool, lightTool, createTool, createExibitorSynapseTool, createInhibitorSynapseTool, deleteTool];
 var tool = 0;
 
+// Instilling-objekter
+var prefDecayToggle, prefSynapseLengthMattersToggle;
 
 addPrefButton(10, 115, 150, 20, function() {
     if (decayMode == "exponential") {
@@ -111,18 +113,6 @@ function draw() {
         textSize(14);
         stroke(240);
         line(0, 40, width, 40);
-
-        noStroke();
-        fill(240);
-        text("Decay mode:", 10, 100);
-        stroke(240);
-        fill(240);
-        rect(10, 115, 150, 20);
-        noStroke();
-        fill(20);
-        textAlign(CENTER, TOP);
-        text(decayMode, 85, 117);
-        textAlign(LEFT, TOP);
     }
 };
 
@@ -148,6 +138,29 @@ function keyPressed() {
     }
     if (keyCode == 80) { // P
         // toggler innstillinger
+        if (!preferences) {
+            prefDecayToggle = createButton("prefDecayToggle");
+            prefDecayToggle.position(10, 50);
+            prefDecayToggle.html("Decay mode: " + decayMode);
+            prefDecayToggle.mousePressed(function() {
+                if (decayMode == "exponential") {
+                    decayMode = "linear";
+                } else {
+                    decayMode = "exponential";
+                }
+                prefDecayToggle.html("Decay mode: " + decayMode);
+            });
+
+            prefSynapseLengthMattersToggle = createButton("prefSynapseLengthMatters");
+            prefSynapseLengthMattersToggle.position(10, 100);
+            prefSynapseLengthMattersToggle.html("succ");
+            prefSynapseLengthMattersToggle.mousePressed(function() {
+                prefSynapseLengthMattersToggle.html("S U C C");
+            });
+
+        }else{
+            removeElements();
+        }
         preferences = !preferences;
     }
 };
@@ -164,12 +177,6 @@ function mousePressed() {
                 toolList[tool].lclick();
             } else if (mouseButton == RIGHT) {
                 toolList[tool].rclick();
-            }
-        }
-    } else {
-        for (let i=0; i<prefButtons.length; ++i) {
-            if (mouseX >= prefButtons[i].x1 && mouseX < prefButtons[i].x2 && mouseY >= prefButtons[i].y1 && mouseY < prefButtons[i].y2) {
-                prefButtons[i].func();
             }
         }
     }
