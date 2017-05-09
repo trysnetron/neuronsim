@@ -39,8 +39,8 @@ const app = {
     neuronRadius: 20,
     tools: [
         { // Move tool
-            name: "",
-            info: "",
+            name: "Move tool",
+            info: "Click and drag a neuron to move it",
             activate: function() {
                 this.neuron = null;
                 this.dragging = false;
@@ -67,38 +67,78 @@ const app = {
             },
             display: () => {},
             inactiveDisplay: () => {},
-            img: "",
+            img: "move.png",
+            buttonElement: undefined,
 
             neuron: null,
             dragging: false,
             offsetX: 0,
             offsetY: 0
-        }
-        ],
-    tool: 0,
-    addTool: function() {
-        if (arguments.length) {
-            if (arguments.length % 2 == 0) { // Kan ikke være et odd antall parametre
-                let newTool = { // Lager et tomt, dødt objekt, inneholder bare det absolutt nødvendige av variabler
-                    name: "Move",
-                    info: "Click and drag a neuron to move it",
-                    activate: function() {},
-                    lclick: function() {},
-                    rclick: function() {},
-                    drag: function() {},
-                    release: () => {},
-                    display: () => {},
-                    inactiveDisplay: () => {},
-                    img: ""
+            }, 
+        { // Excite tool
+            name: "Excite tool",
+            info: "Left click a neuron to make it fire.\nRight click a neuron to include/remove it from firing group.",
+            activate: function() {},
+            lclick: function() {
+                let neuron = mouseOverNeuron();
+                let neuronInGroup = false;
+                if (neuron != null) {
+                    for (let i=0; i<this.selectedNeurons.length; ++i) {
+                        if (this.selectedNeurons[i] == neuron) {
+                            neuronInGroup = true;
+                            break;
+                        }
+                    }
+                    if (neuronInGroup) {
+                        // Får alle nevroner i gruppen til å fyre
+                        for (let i=0; i<this.selectedNeurons.length; ++i) {
+                            this.selectedNeurons[i].newPulse();
+                        }
+                    } else {
+                        neuron.newPulse();
+                    }
                 }
-                for (let i=0; i<arguments.length/2; ++i) {
-                    newTool[arguments[i]] = arguments[i + 1];
+            },
+            rclick: function() {
+                let neuron = mouseOverNeuron();
+                let alreadyInList = false;
+                if (neuron != null) {
+                    for (let i=0; i<this.selectedNeurons.length; ++i) {
+                        if (this.selectedNeurons[i] == neuron) {
+                            this.selectedNeurons.splice(i, 1);
+                            alreadyInList = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyInList) {
+                        this.selectedNeurons.push(neuron);
+                    }
                 }
-                this.tools.push(newTool);
-            }
-        }
-    }
+            },
+            drag: function() {},
+            release: function() {},
+            display: function() {
+                noFill();
+                stroke(180, 140, 0);
+                for (let i=0; i<this.selectedNeurons.length; ++i) {
+                    ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, neuronRadius*4);
+                }
+            },
+            inactiveDisplay: function() {
+                noFill();
+                stroke(180, 140, 0);
+                for (let i=0; i<this.selectedNeurons.length; ++i) {
+                    ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, neuronRadius*4);
+                }
+            },
+            img: "excite.png",
+            buttonElement: undefined,
+
+            selectedNeurons: []
+        }],
+    tool: 0
 };
+
 
 // Nevronklasse
 class Neuron{
@@ -646,59 +686,6 @@ const moveTool = new Tool();
 ////////////////////////////////////////////////
 // Fyrer nevroner //////////////////////////////
 ////////////////////////////////////////////////
-const fireTool = new Tool();
-fireTool.selectedNeurons = [];
-
-fireTool.lclick = function() {
-    let neuron = mouseOverNeuron();
-    let neuronInGroup = false;
-    if (neuron != null) {
-        for (let i=0; i<this.selectedNeurons.length; ++i) {
-            if (this.selectedNeurons[i] == neuron) {
-                neuronInGroup = true;
-                break;
-            }
-        }
-        if (neuronInGroup) {
-            // Får alle nevroner i gruppen til å fyre
-            for (let i=0; i<this.selectedNeurons.length; ++i) {
-                this.selectedNeurons[i].newPulse();
-            }
-        } else {
-            neuron.newPulse();
-        }
-    }
-};
-fireTool.rclick = function() {
-    let neuron = mouseOverNeuron();
-    let alreadyInList = false;
-    if (neuron != null) {
-        for (let i=0; i<this.selectedNeurons.length; ++i) {
-            if (this.selectedNeurons[i] == neuron) {
-                this.selectedNeurons.splice(i, 1);
-                alreadyInList = true;
-                break;
-            }
-        }
-        if (!alreadyInList) {
-            this.selectedNeurons.push(neuron);
-        }
-    }
-};
-fireTool.graphics = function() {
-    noFill();
-    stroke(180, 140, 0);
-    for (let i=0; i<this.selectedNeurons.length; ++i) {
-        ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, neuronRadius*4);
-    }
-};
-fireTool.icon = function(x, y) {
-    noFill();
-    line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.2, x + toolBannerHeight*0.6, y + toolBannerHeight*0.4);
-    line(x + toolBannerHeight*0.6, y + toolBannerHeight*0.4, x + toolBannerHeight*0.4, y + toolBannerHeight*0.6);
-    line(x + toolBannerHeight*0.4, y + toolBannerHeight*0.6, x + toolBannerHeight*0.8, y + toolBannerHeight*0.8);
-};
-fireTool.info = "Left click a neuron to make it fire.\nRight click a neuron to include/remove it from firing group.";
 
 ////////////////////////////////////////////////
 // Lager nye nevroner //////////////////////////
@@ -952,6 +939,33 @@ function setup() {
     app.workspace.mouseReleased(releaseMouse);
     app.workspace.mouseMoved(dragMouse);
     app.toolBanner = createDiv("");
+    app.toolBanner.id("toolBanner");
+    app.toolBanner.style("height", String(app.toolBannerHeight) + "px");
+
+    for (let i=0; i<app.tools.length; ++i) {
+        app.tools[i].buttonElement = createDiv("");
+        app.tools[i].buttonElement.position(i*app.toolBannerHeight, 0);
+        app.tools[i].buttonElement.size(app.toolBannerHeight, app.toolBannerHeight);
+        app.tools[i].buttonElement.parent(app.toolBanner);
+        app.tools[i].buttonElement.addClass("toolButton");
+        if (i == 0) {
+            app.tools[i].buttonElement.addClass("selected");
+        } else {
+            app.tools[i].buttonElement.addClass("unselected");
+        }
+        app.tools[i].buttonElement.style("background-image", "url(" + app.tools[i].img + ")");
+        
+        app.tools[i].buttonElement.mousePressed(function() {
+            if (app.tool != i) {
+                app.tools[app.tool].buttonElement.removeClass("selected");
+                app.tools[app.tool].buttonElement.addClass("unselected");
+                app.tool = i;
+                app.tools[app.tool].buttonElement.removeClass("unselected");
+                app.tools[app.tool].buttonElement.addClass("selected");
+                app.tools[app.tool].activate();
+            }
+        });
+    }
     updateWorkspaceSize();
 
     textSize(14);
@@ -995,12 +1009,15 @@ function draw() {
             textAlign(LEFT, TOP);
         }
 
-        /*
         // Tegner grafikk fra verktøy
-        for (let i = 0; i < toolList.length; ++i) {
-            toolList[i].graphics();
+        for (let i = 0; i < app.tools.length; ++i) {
+            if (i == app.tool) {
+                app.tools[i].display();
+            } else {
+                app.tools[i].inactiveDisplay();
+            }
         }
-
+        /*
         // Tegner verktøy-banner
         noStroke();
         fill(20);
@@ -1104,7 +1121,7 @@ function updateWorkspaceSize() {
         app.neurons[i].constrainPosition();
     }*/
     // endrer størrelsen på canvas
-    app.toolBanner.size(window.innerWidth, app.toolBannerHeight);
+    //app.toolBanner.size(window.innerWidth, app.toolBannerHeight);
     resizeCanvas(window.innerWidth, window.innerHeight - app.toolBannerHeight);
 };
 
