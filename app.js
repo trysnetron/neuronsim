@@ -74,7 +74,7 @@ const app = {
             dragging: false,
             offsetX: 0,
             offsetY: 0
-            }, 
+        }, 
         { // Excite tool
             name: "Excite tool",
             info: "Left click a neuron to make it fire.\nRight click a neuron to include/remove it from firing group.",
@@ -121,24 +121,241 @@ const app = {
                 noFill();
                 stroke(180, 140, 0);
                 for (let i=0; i<this.selectedNeurons.length; ++i) {
-                    ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, neuronRadius*4);
+                    ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, app.neuronRadius*4);
                 }
             },
             inactiveDisplay: function() {
                 noFill();
                 stroke(180, 140, 0);
                 for (let i=0; i<this.selectedNeurons.length; ++i) {
-                    ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, neuronRadius*4);
+                    ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, app.neuronRadius*4);
                 }
             },
             img: "excite.png",
             buttonElement: undefined,
 
             selectedNeurons: []
-        }],
+        },
+        { // Flashlight tool
+            name: "Flashlight tool",
+            info: "Left click to make all neurons within range fire.",
+            activate: function() {},
+            lclick: function() {
+                this.pressing = true;
+            },
+            rclick: function() {},
+            drag: function() {},
+            release: function() {
+                this.pressing = false;
+            },
+            display: function() {
+                noStroke();
+                if (this.pressing) {
+                    if (this.fireCounter < 60 *this.firePeriod) {
+                        ++this.fireCounter;
+                    } else {
+                        for (let i=0; i<app.network.neurons.length; ++i) {
+                            if (pointOverCircle(app.network.neurons[i].x, app.network.neurons[i].y, mouseX, mouseY, this.radius)) {
+                                app.network.neurons[i].newPulse();
+                            } 
+                        }
+                        this.fireCounter = 0;
+                    }
+                    fill(240, 240, 0, 10);
+                } else {
+                    fill(240, 240, 0, 40);
+                }
+                ellipse(mouseX, mouseY, this.radius*2, this.radius*2);
+            },
+            inactiveDisplay: function() {},
+            img: "excite.png",
+            buttonElement: undefined,
+
+            pressing: false,
+            radius: 100,
+            firePeriod: 0.1,
+            fireCounter: 0
+        },
+        { // Neuron tool
+            name: "Neuron tool",
+            info: "Left click to create a neuron.\nRight click to create a neuron with a base frequency.",
+            activate: function() {},
+            lclick: function() {
+                app.network.neurons.push(new Neuron(mouseX, mouseY));
+            },
+            rclick: function() {
+                let neuron = new Neuron(mouseX, mouseY);
+                neuron.spontaneousActivity = true;
+                app.network.neurons.push(neuron);
+            },
+            drag: function() {},
+            release: function() {},
+            display: function() {
+                noFill();
+                stroke(120);
+                ellipse(mouseX, mouseY, app.neuronRadius*2, app.neuronRadius*2);
+            },
+            inactiveDisplay: function() {},
+            img: "neuron.png",
+            buttonElement: undefined
+        },
+        { // Excitatory synapse tool
+            name: "Excitatory synapse tool",
+            info: "Click a neuron to start making a synapse, and then click another one to complete it.",
+            activate: function() {
+                this.masterNeuron = null;
+            },
+            lclick: function() {
+                let neuron = mouseOverNeuron();
+                if (neuron != null) {
+                    if (this.masterNeuron == null) {
+                        this.masterNeuron = neuron;
+                    } else if (neuron != this.masterNeuron) {
+                        this.masterNeuron.newSynapse(neuron, "excitatory", false);
+                        this.masterNeuron = null; 
+                    }
+                }else if (this.masterNeuron != null) {
+                    this.masterNeuron = null;
+                }
+            },
+            rclick: function() {},
+            drag: function() {},
+            release: function() {
+                if (this.masterNeuron != null) {
+                    let neuron = mouseOverNeuron();
+                    if (neuron != null) {
+                        if (neuron != this.masterNeuron) {
+                            this.masterNeuron.newSynapse(neuron, "excitatory", false);
+                            this.masterNeuron = null;
+                        } 
+                    }
+                }
+            },
+            display: function() {
+                stroke(0, 240, 0);
+                if (this.masterNeuron != null) {
+                    line(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
+                }
+            },
+            inactiveDisplay: function() {},
+            img: "excitatory_independent.png",
+            buttonElement: undefined,
+
+            masterNeuron: null
+        },
+        { // Inhibitory synapse tool
+            name: "Inhibitory synapse tool",
+            info: "Click a neuron to start making an synapse, and then click another one to complete it.",
+            activate: function() {
+                this.masterNeuron = null;
+            },
+            lclick: function() {
+                let neuron = mouseOverNeuron();
+                if (neuron != null) {
+                    if (this.masterNeuron == null) {
+                        this.masterNeuron = neuron;
+                    } else if (neuron != this.masterNeuron) {
+                        this.masterNeuron.newSynapse(neuron, "inhibitory", false);
+                        this.masterNeuron = null; 
+                    }
+                }else if (this.masterNeuron != null) {
+                    this.masterNeuron = null;
+                }
+            },
+            rclick: function() {},
+            drag: function() {},
+            release: function() {
+                if (this.masterNeuron != null) {
+                    let neuron = mouseOverNeuron();
+                    if (neuron != null) {
+                        if (neuron != this.masterNeuron) {
+                            this.masterNeuron.newSynapse(neuron, "inhibitory", false);
+                            this.masterNeuron = null;
+                        } 
+                    }
+                }
+            },
+            display: function() {
+                stroke(190, 0, 0);
+                if (this.masterNeuron != null) {
+                    line(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
+                }
+            },
+            inactiveDisplay: function() {},
+            img: "inhibitory_independent.png",
+            buttonElement: undefined,
+
+            masterNeuron: null
+        },
+        { // Inspect tool
+            name: "Inspect tool",
+            info: "Hover over a neuron to see info about it.",
+            activate: function() {},
+            lclick: function() {},
+            rclick: function() {},
+            drag: function() {},
+            release: function() {},
+            display: function() {
+                let neuron = mouseOverNeuron();
+                if (neuron !== null) {
+                    fill(20);
+                    stroke(240);
+                    rect(mouseX + 20, mouseY + 20, 220, 220);
+                    fill(240);
+                    noStroke();
+                    text("Number of axons: " + neuron.axons.length, mouseX + 25, mouseY + 25);
+                    text("Number of dendrites: " + neuron.dendrites.length, mouseX + 25, mouseY + 40);
+                }
+            },
+            inactiveDisplay: function() {},
+            img: "inspect.png",
+            buttonElement: undefined
+        },
+        { // Delete tool
+            name: "Delete tool",
+            info: "Click neurons or synapses to delete them.",
+            activate: function() {},
+            lclick: function() {
+                let neuron = mouseOverNeuron();
+                if (neuron != null) {
+                    //sletter nevron
+                    neuron.delete();
+                    neuron = null;
+                }else {
+                    let synapse = mouseOverSynapse();
+                    if (synapse != null) {
+                        // sletter synapse
+                        synapse.delete();
+                        synapse = null;
+                    }
+                }
+            },
+            rclick: function() {},
+            drag: function() {},
+            release: function() {},
+            display: function() {
+                let neuron = mouseOverNeuron();
+                if (neuron != null) {
+                    noStroke();
+                    fill(240, 0, 0, 50);
+                    ellipse(neuron.x, neuron.y, app.neuronRadius*2 + 20, app.neuronRadius*2 + 20);
+                }else{
+                    let synapse = mouseOverSynapse();
+                    if (synapse != null) {
+                        strokeWeight(20);
+                        stroke(240, 0, 0, 50);
+                        line(synapse.master.x, synapse.master.y, synapse.slave.x, synapse.slave.y);
+                        strokeWeight(1);
+                    }
+                }
+            },
+            inactiveDisplay: function() {},
+            img: "inspect.png",
+            buttonElement: undefined
+        }
+    ],
     tool: 0
 };
-
 
 // Nevronklasse
 class Neuron{
@@ -149,7 +366,7 @@ class Neuron{
         this.potentialCompletion = 0;
         
         this.spontaneousActivity = false;
-        this.frequency = app.baseFrequency;
+        this.frequency = app.network.baseFrequency;
         this.frequencyCounter = this.frequency*60;
 
         this.axons = [];
@@ -174,15 +391,15 @@ class Neuron{
             }
             
             // stabiliserer frekvensen
-            if (this.frequency > app.baseFrequency) {
-                this.frequency -= app.frequencyStabilize/60;
-                if (this.frequency < app.baseFrequency) {
-                    this.frequency = app.baseFrequency;
+            if (this.frequency > app.network.baseFrequency) {
+                this.frequency -= app.network.frequencyStabilize/60;
+                if (this.frequency < app.network.baseFrequency) {
+                    this.frequency = app.network.baseFrequency;
                 }
-            } else if (this.frequency < app.baseFrequency) {
-                this.frequency += app.frequencyStabilize/60;
-                if (this.frequency > app.baseFrequency) {
-                    this.frequency = app.baseFrequency;
+            } else if (this.frequency < app.network.baseFrequency) {
+                this.frequency += app.network.frequencyStabilize/60;
+                if (this.frequency > app.network.baseFrequency) {
+                    this.frequency = app.network.baseFrequency;
                 }
             }
         } else {
@@ -250,15 +467,16 @@ class Neuron{
         }
 
         // Tegner seg selv
-        if (!this.spontaneousActivity) {
-            if (this.pulses.length) {
-                stroke(240, 200, 0);
-            } else {
-                stroke(240);   
-            }
-            fill(20);
-            ellipse(this.x, this.y, app.neuronRadius*2, app.neuronRadius*2);
+        if (!this.spontaneousActivity && this.isFiring()) {
+            stroke(240, 240, 0);   
+        } else {
+            stroke(240);
+        }
+        
+        fill(20);
+        ellipse(this.x, this.y, app.neuronRadius*2, app.neuronRadius*2);
             
+        if (!this.spontaneousActivity) {    
             //Tegner indre sirkel som indikerer potensial-nivå
             noStroke();
             if (this.potential > 0) {
@@ -269,13 +487,15 @@ class Neuron{
                 ellipse(this.x, this.y, 2*app.neuronRadius*-this.potentialCompletion, 2*app.neuronRadius*-this.potentialCompletion);  
             }  
         } else {
-            stroke(120, 120, 240);
-            ellipse(this.x, this.y, app.neuronRadius*2, app.neuronRadius*2);
-            stroke(120, 120, 240, 120);
-            ellipse(this.x, this.y, app.neuronRadius*1.6*abs(sin(PI*this.frequencyCounter/round(60/this.frequency))), app.neuronRadius*1.6*abs(sin(PI*this.frequencyCounter/round(60/this.frequency)))); 
+            fill(240);
+            noStroke();
+            textAlign(CENTER, CENTER);
+            textSize(10);
+            text(this.frequency.toPrecision(2) + "Hz", this.x, this.y);
+            textAlign(LEFT, TOP);
+            textSize(12);
+            //ellipse(this.x, this.y, app.neuronRadius*1.6*abs(sin(PI*this.frequencyCounter/round(60/this.frequency))), app.neuronRadius*1.6*abs(sin(PI*this.frequencyCounter/round(60/this.frequency)))); 
         }
-
-        
     }
 
     inhibitoryFire() {
@@ -300,6 +520,15 @@ class Neuron{
         for (let i=0; i<this.axons.length; ++i) {
             this.axons[i].addPulse();
         }
+    };
+
+    isFiring() {
+        if (this.axons.length) {
+            if (this.axons[0].pulses.length) {
+                return true;
+            }
+        }
+        return false;
     };
 
     constrainPosition() {
@@ -328,6 +557,12 @@ class Neuron{
             }
         }
         return -1;
+    };
+
+    newSynapse(slaveNeuron, type, lengthDependent) {
+        let newSynapse = new Synapse(this, slaveNeuron, type, lengthDependent);
+        this.axons.push(newSynapse);
+        slaveNeuron.dendrites.push(newSynapse);
     };
 
     delete() {
@@ -363,9 +598,6 @@ class Synapse{
         this.updateNeuronPosition();
 
         this.pulses = [];
-
-        master.axons.push(this);
-        slave.dendrites.push(this);
     };
 
     addPulse() {
@@ -417,7 +649,7 @@ class Synapse{
         if (this.type == "excitatory") {
             stroke(0, 170, 0);
         } else if (this.type == "inhibitory") {
-            stroke(170, 0, 0);
+            stroke(190, 0, 0);
         }
         noFill();
 
@@ -429,6 +661,8 @@ class Synapse{
         } else {
             line(this.master.x + this.normalizedX*app.neuronRadius*1.25, this.master.y + this.normalizedY*app.neuronRadius*1.25, this.slave.x - this.normalizedX*app.neuronRadius*1.25, this.slave.y - this.normalizedY*app.neuronRadius*1.25);
         }
+        line(this.slave.x - this.normalizedX*app.neuronRadius*1.25 + this.normalizedY * 6, this.slave.y - this.normalizedY*app.neuronRadius*1.25 - this.normalizedX * 6, this.slave.x - this.normalizedX*app.neuronRadius*1.25 - this.normalizedY * 6, this.slave.y - this.normalizedY*app.neuronRadius*1.25 + this.normalizedX * 6);
+
 
         // Tegner pulsense som beveger seg over synapsen
         stroke(240, 240, 0);
@@ -483,16 +717,16 @@ function mouseOverNeuron() {
 
 function mouseOverSynapse() {
     let synapse, synapseAngle, mouseAngle, synapseDist, mouseDist, relX, relY;
-    for (let i = 0; i < neurons.length; ++i) {
-        for (let j = 0; j < neurons[i].axons.length; ++j) {
-            synapse = neurons[i].axons[j];
+    for (let i = 0; i < app.network.neurons.length; ++i) {
+        for (let j = 0; j < app.network.neurons[i].axons.length; ++j) {
+            synapse = app.network.neurons[i].axons[j];
             synapseAngle = atan2(synapse.slave.y - synapse.master.y, synapse.slave.x - synapse.master.x);
             mouseAngle = atan2(mouseY - synapse.master.y, mouseX - synapse.master.x);
             synapseDist = dist(synapse.master.x, synapse.master.y, synapse.slave.x, synapse.slave.y);
             mouseDist = dist(synapse.master.x, synapse.master.y, mouseX, mouseY);
             relX = cos(mouseAngle - synapseAngle) * mouseDist;
             relY = sin(mouseAngle - synapseAngle) * mouseDist;
-            if (relX > neuronRadius && abs(relY) < 10 && relX < synapseDist - neuronRadius) {
+            if (relX > app.neuronRadius && abs(relY) < 10 && relX < synapseDist - app.neuronRadius) {
                 return synapse;
             }
         }
@@ -662,282 +896,15 @@ function getLinearDecayCoefficient() {
     return linearDecayPotentialPerSec / 60;
 };
 
-// Template-verktøy, alle verktøy skal ta utgangspunkt i denne
-function Tool() {
-    this.lclick = function() {};
-    this.rclick = function() {};
-    this.drag = function() {};
-    this.release = function() {};
-    this.abort = function() {};
-    this.cursor = function() {};
-    this.graphics = function() {};
-    this.icon = function(x, y) {};
-    this.info = "";
-};
-
-// Her ligger alle verktøyene man kan bruke på nevronene og aksonene
-
-////////////////////////////////////////////////
-// Flytter nevroner ////////////////////////////
-////////////////////////////////////////////////
-const moveTool = new Tool();
-
-
-////////////////////////////////////////////////
-// Fyrer nevroner //////////////////////////////
-////////////////////////////////////////////////
-
-////////////////////////////////////////////////
-// Lager nye nevroner //////////////////////////
-////////////////////////////////////////////////
-const createTool = new Tool();
-    
-createTool.lclick = function() {
-    neurons.push(new Neuron(mouseX, mouseY));
-};
-createTool.rclick = function() {
-    let neuron = new Neuron(mouseX, mouseY);
-    neuron.spontaneousActivity = true;
-    neurons.push(neuron);
-};
-createTool.cursor = function() {
-    noFill();
-    stroke(120);
-    ellipse(mouseX, mouseY, neuronRadius*2, neuronRadius*2);
-};
-createTool.icon = function(x, y) {
-    noFill();
-    ellipse(x + toolBannerHeight/2, y + toolBannerHeight/2, toolBannerHeight*0.5, toolBannerHeight*0.5);
-    line(x + toolBannerHeight*0.1, y + toolBannerHeight*0.2, x + toolBannerHeight*0.3, y + toolBannerHeight*0.2);
-    line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.1, x + toolBannerHeight*0.2, y + toolBannerHeight*0.3);
-};
-createTool.info = "Left click to create a neuron.\nRight click to create a neuron with a base frequency.";
-
-////////////////////////////////////////////////
-// Lager nye synapser (akson + dendritt) ///////
-////////////////////////////////////////////////
-const createExibitorSynapseTool = new Tool();
-
-createExibitorSynapseTool.masterNeuron = null;
-createExibitorSynapseTool.lclick = function() {
-    let neuron = mouseOverNeuron();
-    if (neuron != null) {
-        if (this.masterNeuron == null) {
-            this.masterNeuron = neuron;
-        } else if (neuron != this.masterNeuron) {
-            new Synapse(this.masterNeuron, neuron, true);
-            this.masterNeuron = null; 
-        }
-    }else if (this.masterNeuron != null) {
-        this.masterNeuron = null;
-    }
-};
-createExibitorSynapseTool.release = function() {
-    if (this.masterNeuron != null) {
-        let neuron = mouseOverNeuron();
-        if (neuron != null) {
-            if (neuron != this.masterNeuron) {
-                new Synapse(this.masterNeuron, neuron, true);
-                this.masterNeuron = null;
-            } 
-        }
-    }
-}
-createExibitorSynapseTool.abort = function() {
-    this.masterNeuron = null;
-};
-createExibitorSynapseTool.cursor = function() {
-    stroke(0, 240, 0);
-    if (this.masterNeuron != null) {
-        line(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
-    }
-};
-createExibitorSynapseTool.icon = function(x, y) {
-    line(x + toolBannerHeight*0.3, y + toolBannerHeight*0.7, x + toolBannerHeight*0.7, y + toolBannerHeight*0.3);
-    line(x + toolBannerHeight*0.7, y + toolBannerHeight*0.3, x + toolBannerHeight*0.6, y + toolBannerHeight*0.3);
-    line(x + toolBannerHeight*0.7, y + toolBannerHeight*0.3, x + toolBannerHeight*0.7, y + toolBannerHeight*0.4);
-    // plus
-    line(x + toolBannerHeight*0.1, y + toolBannerHeight*0.2, x + toolBannerHeight*0.3, y + toolBannerHeight*0.2);
-    line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.1, x + toolBannerHeight*0.2, y + toolBannerHeight*0.3);
-};
-createExibitorSynapseTool.info = "Click a neuron to start making a synapse, and then click another one to complete it.";
-
-////////////////////////////////////////////////
-// Lager nye synapser (akson + dendritt) ///////
-////////////////////////////////////////////////
-const createInhibitorSynapseTool = new Tool();
-
-createInhibitorSynapseTool.masterNeuron = null;
-createInhibitorSynapseTool.lclick = function() {
-    let neuron = mouseOverNeuron();
-    if (neuron != null) {
-        if (this.masterNeuron == null) {
-            this.masterNeuron = neuron;
-        } else if (neuron != this.masterNeuron) {
-            new Synapse(this.masterNeuron, neuron, false);
-            this.masterNeuron = null; 
-        }
-    }else if (this.masterNeuron != null) {
-        this.masterNeuron = null;
-    }
-};
-createInhibitorSynapseTool.release = function() {
-    if (this.masterNeuron != null) {
-        let neuron = mouseOverNeuron();
-        if (neuron != null) {
-            if (neuron != this.masterNeuron) {
-                new Synapse(this.masterNeuron, neuron, false);
-                this.masterNeuron = null;
-            } 
-        }
-    }
-}
-createInhibitorSynapseTool.abort = function() {
-    this.masterNeuron = null;
-};
-createInhibitorSynapseTool.cursor = function() {
-    stroke(240, 0, 0);
-    if (this.masterNeuron != null) {
-        line(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
-    }
-};
-createInhibitorSynapseTool.icon = function(x, y) {
-    line(x + toolBannerHeight*0.3, y + toolBannerHeight*0.7, x + toolBannerHeight*0.7, y + toolBannerHeight*0.3);
-    line(x + toolBannerHeight*0.7, y + toolBannerHeight*0.3, x + toolBannerHeight*0.8, y + toolBannerHeight*0.3);
-    line(x + toolBannerHeight*0.7, y + toolBannerHeight*0.3, x + toolBannerHeight*0.7, y + toolBannerHeight*0.2);
-    // plus
-    line(x + toolBannerHeight*0.1, y + toolBannerHeight*0.2, x + toolBannerHeight*0.3, y + toolBannerHeight*0.2);
-    line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.1, x + toolBannerHeight*0.2, y + toolBannerHeight*0.3);
-};
-createInhibitorSynapseTool.info = "Click a neuron to start making an synapse, and then click another one to complete it.";
-
-/////////////////////////////////////////////
-// Sletter nevroner /////////////////////////
-/////////////////////////////////////////////
-const deleteTool = new Tool();
-
-deleteTool.lclick = function() {
-    let neuron = mouseOverNeuron();
-    if (neuron != null) {
-        //sletter nevron
-        neuron.delete();
-        neuron = null;
-    }else {
-        let synapse = mouseOverSynapse();
-        if (synapse != null) {
-            // sletter synapse
-            synapse.delete();
-            synapse = null;
-        }
-    }
-};
-deleteTool.cursor = function() {
-    let neuron = mouseOverNeuron();
-    if (neuron != null) {
-        noStroke();
-        fill(240, 0, 0, 50);
-        ellipse(neuron.x, neuron.y, neuronRadius*2 + 20, neuronRadius*2 + 20);
-    }else{
-        let synapse = mouseOverSynapse();
-        if (synapse != null) {
-            strokeWeight(20);
-            stroke(240, 0, 0, 50);
-            line(synapse.master.x, synapse.master.y, synapse.slave.x, synapse.slave.y);
-            strokeWeight(1);
-        }
-    }
-};
-deleteTool.icon = function(x, y) {
-    line(x + toolBannerHeight*0.3, y + toolBannerHeight*0.7, x + toolBannerHeight*0.7, y + toolBannerHeight*0.3);
-    line(x + toolBannerHeight*0.3, y + toolBannerHeight*0.3, x + toolBannerHeight*0.7, y + toolBannerHeight*0.7);
-};
-deleteTool.info = "Click a neuron or a synapse to delete it.";
-
-/////////////////////////////////////////////
-// Lommelykt /////////////////////////
-////////////////////////////////////////////////
-const lightTool = new Tool();
-
-lightTool.pressing = false;
-lightTool.radius = 100;
-lightTool.firePeriod = 0.1;
-lightTool.fireCounter = 0;
-
-lightTool.lclick = function() {
-    this.pressing = true;
-};
-lightTool.cursor = function() {
-    noStroke();
-    if (this.pressing) {
-        if (this.fireCounter < 60 *this.firePeriod) {
-            ++this.fireCounter;
-        } else {
-            for (let i=0; i<neurons.length; ++i) {
-                if (pointOverCircle(neurons[i].x, neurons[i].y, mouseX, mouseY, this.radius)) {
-                    neurons[i].newPulse();
-                } 
-            }
-            this.fireCounter = 0;
-        }
-        fill(240, 240, 0, 10);
-    } else {
-        fill(240, 240, 0, 40);
-    }
-    ellipse(mouseX, mouseY, this.radius*2, this.radius*2);
-};
-lightTool.release = function() {
-    this.pressing = false;
-}
-
-lightTool.icon = function(x, y) {
-    line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.2, x + toolBannerHeight*0.4, y + toolBannerHeight*0.4);
-    line(x + toolBannerHeight*0.5, y + toolBannerHeight*0.1, x + toolBannerHeight*0.5, y + toolBannerHeight*0.3);
-    line(x + toolBannerHeight*0.8, y + toolBannerHeight*0.2, x + toolBannerHeight*0.6, y + toolBannerHeight*0.4);
-    line(x + toolBannerHeight*0.9, y + toolBannerHeight*0.5, x + toolBannerHeight*0.7, y + toolBannerHeight*0.5);
-    line(x + toolBannerHeight*0.8, y + toolBannerHeight*0.8, x + toolBannerHeight*0.6, y + toolBannerHeight*0.6);
-    line(x + toolBannerHeight*0.5, y + toolBannerHeight*0.9, x + toolBannerHeight*0.5, y + toolBannerHeight*0.7);
-    line(x + toolBannerHeight*0.2, y + toolBannerHeight*0.8, x + toolBannerHeight*0.4, y + toolBannerHeight*0.6);
-    line(x + toolBannerHeight*0.1, y + toolBannerHeight*0.5, x + toolBannerHeight*0.3, y + toolBannerHeight*0.5);
-};
-lightTool.info = "Click and hold to make all neurons within range to fire.";
-
-// Konstanter
-/*
-var potentialThreshold = 100;
-var potentialPulseIncrement = 80;
-var potentialPulseDecrement = 80;
-var potentialLimit = 200;
-var pulseDuration = 1 * 60; // sekunder * framerate
-var baseFrequency = 2; // Hz
-var frequencyStabilize = 1; // Hz/s
-var frequencyIncrement = 1;
-var frequencyDecrement = 1;
-
-var decayMode = "linear";
-
-var exponentialDecayTargetSeconds = 2;
-var exponentialDecayBase = getExponentialDecayBase();
-
-var linearDecayPotentialPerSec = 60;
-var linearDecayCoefficient = getLinearDecayCoefficient();
-
-// Div annet
-var preferences = false;
-
-var toolBannerHeight = 40;
-const neuronRadius = 20;
-*/
-
-
 function setup() {
     // Skrur av høyreklikk-menyen
     document.body.oncontextmenu = function () { return false; };
 
     app.workspace = createCanvas(200, 200);
     app.workspace.position(0, app.toolBannerHeight);
-    app.workspace.mousePressed(clickMouse);
-    app.workspace.mouseReleased(releaseMouse);
-    app.workspace.mouseMoved(dragMouse);
+    //app.workspace.mousePressed(clickMouse);
+    //app.workspace.mouseReleased(releaseMouse);
+    //app.workspace.mouseMoved(dragMouse);
     app.toolBanner = createDiv("");
     app.toolBanner.id("toolBanner");
     app.toolBanner.style("height", String(app.toolBannerHeight) + "px");
@@ -977,16 +944,16 @@ function setup() {
     app.network.neurons.push(new Neuron(600, 800));
     app.network.neurons.push(new Neuron(300, 400));
     
-    new Synapse(app.network.neurons[0], app.network.neurons[1], "excitatory", true);
-    new Synapse(app.network.neurons[0], app.network.neurons[2], "inhibitory", true);
-    new Synapse(app.network.neurons[0], app.network.neurons[3], "inhibitory", false);
-    new Synapse(app.network.neurons[0], app.network.neurons[4], "excitatory", false);
+    app.network.neurons[0].newSynapse(app.network.neurons[1], "excitatory", true);
+    app.network.neurons[0].newSynapse(app.network.neurons[2], "inhibitory", true);
+    app.network.neurons[0].newSynapse(app.network.neurons[3], "inhibitory", false);
+    app.network.neurons[0].newSynapse(app.network.neurons[4], "excitatory", false);
+    app.network.neurons[1].newSynapse(app.network.neurons[2], "excitatory", false);
 }
 
 function draw() {
     background(20);
     
-
     if (!app.showPreferences) {
         if (app.network.neurons.length > 0) {
             // Oppdaterer pulser
@@ -1001,14 +968,7 @@ function draw() {
             fill(240);
             text(app.network.neurons[1].potential, 10, 10);
 
-        } else {
-            noStroke();
-            fill(160);
-            textAlign(CENTER, CENTER);
-            text("Start by creating some neurons (press 3),\nthen make some synapses between them (press 4 and 5).\n\nPress 's' to save and 'l' to load.", width / 2, height / 2);
-            textAlign(LEFT, TOP);
-        }
-
+        } 
         // Tegner grafikk fra verktøy
         for (let i = 0; i < app.tools.length; ++i) {
             if (i == app.tool) {
@@ -1017,58 +977,6 @@ function draw() {
                 app.tools[i].inactiveDisplay();
             }
         }
-        /*
-        // Tegner verktøy-banner
-        noStroke();
-        fill(20);
-        rect(0, 0, width, toolBannerHeight);
-        stroke(240);
-        line(0, toolBannerHeight, width, toolBannerHeight);
-
-        for (let i = 0; i < toolList.length; ++i) {
-            if (i == tool) {
-                noStroke();
-                fill(240);
-                rect(toolBannerHeight * i, 0, toolBannerHeight, toolBannerHeight);
-                stroke(20);
-            } else {
-                stroke(240);
-            }
-            toolList[i].icon(i * toolBannerHeight, 0);
-            stroke(240);
-            line(toolBannerHeight * (i + 1), 0, toolBannerHeight * (1 + i), toolBannerHeight);
-        }
-        noStroke();
-        fill(160);
-        text(toolList[tool].info, 5, toolBannerHeight + 5);
-
-        // Tegner verktøyspesifik peker 
-        if (mouseY > toolBannerHeight) {
-            toolList[tool].cursor();
-        }
-    } else {
-        // Tegner innstillinger
-        noStroke();
-        fill(240);
-        textSize(32);
-        text("preferences", 10, 0);
-        textSize(14);
-        stroke(240);
-        line(0, 40, width, 40);
-
-        noStroke();
-        fill(240);
-        text("Decay mode:", 10, 100);
-        stroke(240);
-        fill(240);
-        rect(10, 115, 150, 20);
-        noStroke();
-        fill(20);
-        textAlign(CENTER, TOP);
-        text(decayMode, 85, 117);
-        textAlign(LEFT, TOP);
-    }
-    */
     }
     app.previousMillis = millis();
 };
@@ -1099,29 +1007,34 @@ function keyPressed() {
     }
 };
 */
-function clickMouse() {
-    if (mouseButton == LEFT) {
-        app.tools[app.tool].lclick();
-    } else if (mouseButton == RIGHT) {
-        app.tools[app.tool].rclick();
+function mousePressed() {
+    if (mouseY > app.toolBannerHeight) {
+        if (mouseButton == LEFT) {
+            app.tools[app.tool].lclick();
+        } else if (mouseButton == RIGHT) {
+            app.tools[app.tool].rclick();
+        }
     }
 };
 
-function releaseMouse() {
-    app.tools[app.tool].release()
+function mouseReleased() {
+    if (mouseY > app.toolBannerHeight) {
+        app.tools[app.tool].release();
+    }
 };
 
-function dragMouse() {
-    app.tools[app.tool].drag();
+function mouseDragged() {
+    if (mouseY > app.toolBannerHeight) {
+        app.tools[app.tool].drag();
+    }
 };
 
 function updateWorkspaceSize() {
     // sjekker at ingen nevroner havner på utsiden av vinduet
-    /*for (let i = 0; i < app.neurons.length; ++i) {
-        app.neurons[i].constrainPosition();
-    }*/
+    for (let i = 0; i < app.neurons.length; ++i) {
+        app.network.neurons[i].constrainPosition();
+    }
     // endrer størrelsen på canvas
-    //app.toolBanner.size(window.innerWidth, app.toolBannerHeight);
     resizeCanvas(window.innerWidth, window.innerHeight - app.toolBannerHeight);
 };
 
