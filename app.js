@@ -65,8 +65,8 @@ const app = {
                     this.dragging = false;
                 }
             },
-            display: () => {},
-            inactiveDisplay: () => {},
+            display: function() {},
+            inactiveDisplay: function() {},
             img: "move.png",
             buttonElement: undefined,
 
