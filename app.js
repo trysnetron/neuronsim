@@ -708,7 +708,7 @@ class Synapse{
     propagatePulses() {
         for (let i=this.pulses.length-1; i>=0; --i) {
             if (this.lengthDependent) { // Avhengig av lengde
-                if (this.pulses[i] >= 1) {
+                if (this.distance <= 0) {
                     this.pulses.splice(i, 1); // Fjern denne pulsen fra pulslisten
                     if (this.type == "excitatory") {
                         this.slave.excitatoryFire();
@@ -716,11 +716,20 @@ class Synapse{
                         this.slave.inhibitoryFire();
                     }
                 } else {
-                    this.pulses[i] += (millis() - app.previousMillis)/1000*app.network.pulseDistance/this.distance;
+                    if (this.pulses[i] >= 1) {
+                        this.pulses.splice(i, 1); // Fjern denne pulsen fra pulslisten
+                        if (this.type == "excitatory") {
+                            this.slave.excitatoryFire();
+                        } else if(this.type == "inhibitory") {
+                            this.slave.inhibitoryFire();
+                        }
+                    } else {
+                        this.pulses[i] += (millis() - app.previousMillis)/1000*app.network.pulseDistance/this.distance;
+                    }
+                    /*if ((millis() - this.pulses[i])/1000*app.network.pulseDistance >= this.distance - app.neuronRadius*2) {
+                        
+                    }*/
                 }
-                /*if ((millis() - this.pulses[i])/1000*app.network.pulseDistance >= this.distance - app.neuronRadius*2) {
-                    
-                }*/
             } else { // Uavhengig av lengde
                 if (this.pulses[i] >= 1) {
                     this.pulses.splice(i, 1); // Fjern denne pulsen fra pulslisten
@@ -755,24 +764,25 @@ class Synapse{
         noFill();
 
         // Tegner synapsen
-        if (this.lengthDependent) {
-            for (let i=app.neuronRadius; i<this.distance + app.neuronRadius*0.75; i+=6) {
-                point(this.master.x + this.normalizedX*i, this.master.y + this.normalizedY*i);
+        if (this.distance > 0) { // gidder bare tegne hvis synapsen er lengre enn 0 pixler
+            if (this.lengthDependent) {
+                for (let i=app.neuronRadius; i<this.distance + app.neuronRadius*0.75; i+=6) {
+                    point(this.master.x + this.normalizedX*i, this.master.y + this.normalizedY*i);
+                }
+            } else {
+                line(this.master.x + this.normalizedX*app.neuronRadius*1.25, this.master.y + this.normalizedY*app.neuronRadius*1.25, this.slave.x - this.normalizedX*app.neuronRadius*1.25, this.slave.y - this.normalizedY*app.neuronRadius*1.25);
             }
-        } else {
-            line(this.master.x + this.normalizedX*app.neuronRadius*1.25, this.master.y + this.normalizedY*app.neuronRadius*1.25, this.slave.x - this.normalizedX*app.neuronRadius*1.25, this.slave.y - this.normalizedY*app.neuronRadius*1.25);
-        }
-        line(this.slave.x - this.normalizedX*app.neuronRadius*1.25 + this.normalizedY * 6, this.slave.y - this.normalizedY*app.neuronRadius*1.25 - this.normalizedX * 6, this.slave.x - this.normalizedX*app.neuronRadius*1.25 - this.normalizedY * 6, this.slave.y - this.normalizedY*app.neuronRadius*1.25 + this.normalizedX * 6);
-
-
-        // Tegner pulsense som beveger seg over synapsen
-        stroke(240, 240, 0);
-        for (let i=0; i<this.pulses.length; ++i) {
-            line(
-                this.master.x + this.normalizedX*(app.neuronRadius + this.pulses[i] * this.distance) + this.normalizedY * 5, 
-                this.master.y + this.normalizedY*(app.neuronRadius + this.pulses[i] * this.distance) - this.normalizedX * 5,
-                this.master.x + this.normalizedX*(app.neuronRadius + this.pulses[i] * this.distance) - this.normalizedY * 5, 
-                this.master.y + this.normalizedY*(app.neuronRadius + this.pulses[i] * this.distance) + this.normalizedX * 5);
+            line(this.slave.x - this.normalizedX*app.neuronRadius*1.25 + this.normalizedY * 6, this.slave.y - this.normalizedY*app.neuronRadius*1.25 - this.normalizedX * 6, this.slave.x - this.normalizedX*app.neuronRadius*1.25 - this.normalizedY * 6, this.slave.y - this.normalizedY*app.neuronRadius*1.25 + this.normalizedX * 6);
+        
+            // Tegner pulsense som beveger seg over synapsen
+            stroke(240, 240, 0);
+            for (let i=0; i<this.pulses.length; ++i) {
+                line(
+                    this.master.x + this.normalizedX*(app.neuronRadius + this.pulses[i] * this.distance) + this.normalizedY * 5, 
+                    this.master.y + this.normalizedY*(app.neuronRadius + this.pulses[i] * this.distance) - this.normalizedX * 5,
+                    this.master.x + this.normalizedX*(app.neuronRadius + this.pulses[i] * this.distance) - this.normalizedY * 5, 
+                    this.master.y + this.normalizedY*(app.neuronRadius + this.pulses[i] * this.distance) + this.normalizedX * 5);
+            }
         }
         
         //ellipse(this.slave.x - normalizedX*NEURON_RADIUS*1.5, this.slave.y - normalizedY*NEURON_RADIUS*1.5, 10, 10);
