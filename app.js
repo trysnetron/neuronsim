@@ -23,7 +23,8 @@ const app = {
         
         pulseMode: "synapseLengthIndependent",
         pulseDuration: 1000, // Millisekunder
-        pulseDistance: 100, // Hvor mange pixler pulsen skal bevege seg per sekund, gjelder bare når synapsen er lengdeavhengig
+        pulseDistance: 500, // Hvor mange pixler pulsen skal bevege seg per sekund, gjelder bare når synapsen er lengdeavhengig
+        pulseLightDuration: 2000,
 
         neurons: [], 
 
@@ -452,7 +453,21 @@ const app = {
             buttonElement: undefined
         }
     ],
-    tool: 0
+    tool: 0,
+    switchTool: function(tool) {
+        if (tool >= 0 && tool < this.tools.length) {
+            if (tool != this.tool) {
+                this.tools[this.tool].buttonElement.removeClass("selected");
+                this.tools[this.tool].buttonElement.addClass("unselected");
+                this.tool = tool;
+                this.tools[this.tool].buttonElement.removeClass("unselected");
+                this.tools[this.tool].buttonElement.addClass("selected");
+                this.tools[this.tool].activate();
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 // Nevronklasse
@@ -462,6 +477,7 @@ class Neuron{
         this.y = iy;
         this.potential = 0;
         this.potentialCompletion = 0;
+        this.lastPulseTimestamp = -app.network.pulseLightDuration;
         
         this.spontaneousActivity = false;
         this.frequency = app.network.baseFrequency;
@@ -537,22 +553,6 @@ class Neuron{
     }
 
     updatePulses() {
-        // oppdaterer alle pulser
-        // går gjennom listen med pulser baklengs for å unngå kjipe feil når pulser slettes
-        /*for (let i=this.pulses.length-1; i>=0; --i) {
-            if (this.pulses[i] > 0) {
-                --this.pulses[i];
-            }else{
-                this.pulses.splice(i, 1);
-                for (let i=0; i<this.axons.length; ++i) {
-                    if (this.axons[i].type) {
-                        this.axons[i].slave.exitatorFire();
-                    } else {
-                        this.axons[i].slave.inhibitorFire();
-                    }
-                }
-            }
-        }*/
         for (let i=0; i<this.axons.length; ++i) {
             this.axons[i].propagatePulses();
         }
@@ -565,7 +565,7 @@ class Neuron{
         }
 
         // Tegner seg selv
-        if (!this.spontaneousActivity && this.isFiring()) {
+        if (!this.spontaneousActivity && (millis() - this.lastPulseTimestamp) <= app.network.pulseLightDuration) {
             stroke(240, 240, 0);   
         } else {
             stroke(240);
@@ -618,6 +618,7 @@ class Neuron{
         for (let i=0; i<this.axons.length; ++i) {
             this.axons[i].addPulse();
         }
+        this.lastPulseTimestamp = millis();
     };
 
     isFiring() {
@@ -835,15 +836,7 @@ function mouseOverSynapse() {
     return null;
 }
 
-function findSynapse(id) {
-    for (let i = 0; i < neurons.length; ++i) {
-        for (let j = 0; j < neurons[i].axons.length; ++j) {
-            if (neurons[i].axons[j] == id) {
-
-            }
-        }
-    }
-}
+/*
 
 function saveNetwork() {
     let save = {};
@@ -988,6 +981,7 @@ function migrateSave() {
         }
     }
 };
+*/ 
 
 function getExponentialDecayBase() {
     return Math.exp(Math.log(0.01) / 60 / exponentialDecayTargetSeconds);
@@ -1003,9 +997,6 @@ function setup() {
 
     app.workspace = createCanvas(200, 200);
     app.workspace.position(0, app.toolBannerHeight);
-    //app.workspace.mousePressed(clickMouse);
-    //app.workspace.mouseReleased(releaseMouse);
-    //app.workspace.mouseMoved(dragMouse);
     app.toolBanner = createDiv("");
     app.toolBanner.id("toolBanner");
     app.toolBanner.style("height", String(app.toolBannerHeight) + "px");
@@ -1024,14 +1015,7 @@ function setup() {
         app.tools[i].buttonElement.style("background-image", "url(" + app.tools[i].img + ")");
         
         app.tools[i].buttonElement.mousePressed(function() {
-            if (app.tool != i) {
-                app.tools[app.tool].buttonElement.removeClass("selected");
-                app.tools[app.tool].buttonElement.addClass("unselected");
-                app.tool = i;
-                app.tools[app.tool].buttonElement.removeClass("unselected");
-                app.tools[app.tool].buttonElement.addClass("selected");
-                app.tools[app.tool].activate();
-            }
+            app.switchTool(i);
         });
     }
     updateWorkspaceSize();
@@ -1039,6 +1023,7 @@ function setup() {
     textSize(14);
     textAlign(LEFT, TOP);
 
+    /*
     app.network.neurons.push(new Neuron(100, 400));
     app.network.neurons.push(new Neuron(200, 150));
     app.network.neurons.push(new Neuron(200, 800));
@@ -1050,6 +1035,7 @@ function setup() {
     app.network.neurons[0].newSynapse(app.network.neurons[3], "inhibitory", false);
     app.network.neurons[0].newSynapse(app.network.neurons[4], "excitatory", false);
     app.network.neurons[1].newSynapse(app.network.neurons[2], "excitatory", false);
+    */
 }
 
 function draw() {
@@ -1078,41 +1064,26 @@ function draw() {
             }
         }
     }
-    fill(240);
-    noStroke();
-    text(app.tools[app.tool].info, 10, 10);
-
+    
+    if (app.tools.length) {
+        fill(240);
+        noStroke();
+        text(app.tools[app.tool].name, 10, 10);
+        fill(180);
+        text(app.tools[app.tool].info, 10, 28);
+    }    
     app.previousMillis = millis();
 };
-/*
+
 function keyPressed() {
     // skrur av de fleste knapper når man er inne i innstillinger
-    if (!preferences) {
-        if (keyCode >= 49 && keyCode <= 57) { // 1 2 3 4 5 6 7 8 9
-            if (keyCode - 49 < toolList.length) {
-                if (keyCode - 49 != tool) {
-                    toolList[tool].abort();
-                    tool = keyCode - 49;
-                }
-            }
-        } else if (keyCode == 83) { // S
-            if (saveNetwork()) {
-                console.log("Network saved");
-            }
-        } else if (keyCode == 76) { // L
-            if (loadNetwork()) {
-                console.log("Network loaded");
-            }
-        }
-    }
-    if (keyCode == 80) { // P
-        // toggler innstillinger
-        preferences = !preferences;
+    if (keyCode >= 49 && keyCode <= 57) { // 1 2 3 4 5 6 7 8 9
+        app.switchTool(keyCode - 49);
     }
 };
-*/
+
 function mousePressed() {
-    if (mouseY > app.toolBannerHeight) {
+    if (mouseInsideWorkspace()) {   
         if (mouseButton == LEFT) {
             app.tools[app.tool].lclick();
         } else if (mouseButton == RIGHT) {
@@ -1122,16 +1093,20 @@ function mousePressed() {
 };
 
 function mouseReleased() {
-    if (mouseY > app.toolBannerHeight) {
+    if (mouseInsideWorkspace()) {
         app.tools[app.tool].release();
     }
 };
 
 function mouseDragged() {
-    if (mouseY > app.toolBannerHeight) {
+    if (mouseInsideWorkspace()) {
         app.tools[app.tool].drag();
     }
 };
+
+function mouseInsideWorkspace() {
+    return (mouseX >= 0 && mouseX < width && mouseY >= 0 && mouseY < height);
+}
 
 function updateWorkspaceSize() {
     // sjekker at ingen nevroner havner på utsiden av vinduet

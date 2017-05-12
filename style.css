@@ -35,3 +35,10 @@ html body {
 .selected {
     background-color: rgb(120, 120, 120);
 }
+
+#jsonButton {
+    border-bottom: 1px solid rgb(200, 200, 200);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-image: url("json.png");
+}
