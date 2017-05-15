@@ -82,18 +82,14 @@ const app = {
             activate: function() {},
             lclick: function() {
                 let neuron = mouseOverNeuron();
-                let neuronInGroup = false;
                 if (neuron != null) {
-                    for (let i=0; i<this.selectedNeurons.length; ++i) {
-                        if (this.selectedNeurons[i] == neuron) {
-                            neuronInGroup = true;
-                            break;
-                        }
-                    }
-                    if (neuronInGroup) {
+                    
+                    if (neuron.group) {
                         // Får alle nevroner i gruppen til å fyre
-                        for (let i=0; i<this.selectedNeurons.length; ++i) {
-                            this.selectedNeurons[i].newPulse();
+                        for (let i=0; i<app.network.neurons.length; ++i) {
+                            if (app.network.neurons[i].group) {
+                                app.network.neurons[i].newPulse();
+                            }
                         }
                     } else {
                         neuron.newPulse();
@@ -102,40 +98,22 @@ const app = {
             },
             rclick: function() {
                 let neuron = mouseOverNeuron();
-                let alreadyInList = false;
                 if (neuron != null) {
-                    for (let i=0; i<this.selectedNeurons.length; ++i) {
-                        if (this.selectedNeurons[i] == neuron) {
-                            this.selectedNeurons.splice(i, 1);
-                            alreadyInList = true;
-                            break;
+                    if (!neuron.spontaneousActivity) {
+                        if (neuron.group) {
+                            neuron.group = 0;
+                        } else {
+                            neuron.group = 1;
                         }
-                    }
-                    if (!alreadyInList) {
-                        this.selectedNeurons.push(neuron);
                     }
                 }
             },
             drag: function() {},
             release: function() {},
-            display: function() {
-                noFill();
-                stroke(180, 140, 0);
-                for (let i=0; i<this.selectedNeurons.length; ++i) {
-                    ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, app.neuronRadius*4);
-                }
-            },
-            inactiveDisplay: function() {
-                noFill();
-                stroke(180, 140, 0);
-                for (let i=0; i<this.selectedNeurons.length; ++i) {
-                    ellipse(this.selectedNeurons[i].x, this.selectedNeurons[i].y, app.neuronRadius*4);
-                }
-            },
+            display: function() {},
+            inactiveDisplay: function() {},
             img: "excite.png",
-            buttonElement: undefined,
-
-            selectedNeurons: []
+            buttonElement: undefined
         },
         { // Flashlight tool
             name: "Flashlight tool",
@@ -485,6 +463,7 @@ class Neuron{
 
         this.axons = [];
         this.dendrites = [];
+        this.group = 0;
         
         this.pulses = [];
     }
@@ -584,6 +563,13 @@ class Neuron{
                 fill(120, 0, 0);
                 ellipse(this.x, this.y, 2*app.neuronRadius*-this.potentialCompletion, 2*app.neuronRadius*-this.potentialCompletion);  
             }  
+            if (this.group) {
+                // Tegner sirkel som indikerer at nevronet er i en gruppe
+                stroke(240, 240, 0);
+                noFill();
+                ellipse(this.x, this.y, app.neuronRadius*4, app.neuronRadius*4);
+            }
+
         } else {
             fill(240);
             noStroke();
