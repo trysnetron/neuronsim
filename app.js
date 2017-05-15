@@ -177,7 +177,7 @@ const app = {
             inactiveDisplay: function() {},
             img: "neuron.png",
             buttonElement: undefined
-        },
+        },/*
         { // Excitatory synapse tool
             name: "Excitatory synapse tool",
             info: "Click a neuron to start making a synapse, and then click another one to complete it.",
@@ -213,7 +213,12 @@ const app = {
             display: function() {
                 stroke(0, 240, 0);
                 if (this.masterNeuron != null) {
-                    line(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
+                    let distance = dist(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
+                    let normalizedX = (mouseX - this.masterNeuron.x)/distance;
+                    let normalizedY = (mouseY - this.masterNeuron.y)/distance;
+                    for (let i=0; i<distance; i+=6) {
+                        point(this.masterNeuron.x + normalizedX*i, this.masterNeuron.y + normalizedY*i);
+                    }
                 }
             },
             inactiveDisplay: function() {},
@@ -221,7 +226,7 @@ const app = {
             buttonElement: undefined,
 
             masterNeuron: null
-        },
+        }, 
         { // Inhibitory synapse tool
             name: "Inhibitory synapse tool",
             info: "Click a neuron to start making an synapse, and then click another one to complete it.",
@@ -257,7 +262,12 @@ const app = {
             display: function() {
                 stroke(190, 0, 0);
                 if (this.masterNeuron != null) {
-                    line(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
+                    let distance = dist(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
+                    let normalizedX = (mouseX - this.masterNeuron.x)/distance;
+                    let normalizedY = (mouseY - this.masterNeuron.y)/distance;
+                    for (let i=0; i<distance; i+=6) {
+                        point(this.masterNeuron.x + normalizedX*i, this.masterNeuron.y + normalizedY*i);
+                    }
                 }
             },
             inactiveDisplay: function() {},
@@ -265,9 +275,9 @@ const app = {
             buttonElement: undefined,
 
             masterNeuron: null
-        },
+        },*/
         { // Excitatory dependent synapse tool
-            name: "Length dependent excitatory synapse tool",
+            name: "Excitatory synapse tool",
             info: "Click a neuron to start making a synapse, and then click another one to complete it.",
             activate: function() {
                 this.masterNeuron = null;
@@ -301,12 +311,7 @@ const app = {
             display: function() {
                 if (this.masterNeuron != null) {
                     stroke(0, 240, 0);
-                    let distance = dist(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
-                    let normalizedX = (mouseX - this.masterNeuron.x)/distance;
-                    let normalizedY = (mouseY - this.masterNeuron.y)/distance;
-                    for (let i=0; i<distance; i+=6) {
-                        point(this.masterNeuron.x + normalizedX*i, this.masterNeuron.y + normalizedY*i);
-                    }
+                    line(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
                 }
             },
             inactiveDisplay: function() {},
@@ -316,7 +321,7 @@ const app = {
             masterNeuron: null
         },
         { // Inhibiory dependent synapse tool
-            name: "Length dependent inhibitory synapse tool",
+            name: "Inhibitory synapse tool",
             info: "Click a neuron to start making a synapse, and then click another one to complete it.",
             activate: function() {
                 this.masterNeuron = null;
@@ -350,12 +355,7 @@ const app = {
             display: function() {
                 if (this.masterNeuron != null) {
                     stroke(240, 0, 0);
-                    let distance = dist(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
-                    let normalizedX = (mouseX - this.masterNeuron.x)/distance;
-                    let normalizedY = (mouseY - this.masterNeuron.y)/distance;
-                    for (let i=0; i<distance; i+=6) {
-                        point(this.masterNeuron.x + normalizedX*i, this.masterNeuron.y + normalizedY*i);
-                    }
+                    line(this.masterNeuron.x, this.masterNeuron.y, mouseX, mouseY);
                 }
             },
             inactiveDisplay: function() {},
@@ -751,12 +751,12 @@ class Synapse{
 
         // Tegner synapsen
         if (this.distance > 0) { // gidder bare tegne hvis synapsen er lengre enn 0 pixler
-            if (this.lengthDependent) {
+            if (this.lengthDependent) {  
+                line(this.master.x + this.normalizedX*app.neuronRadius*1.25, this.master.y + this.normalizedY*app.neuronRadius*1.25, this.slave.x - this.normalizedX*app.neuronRadius*1.25, this.slave.y - this.normalizedY*app.neuronRadius*1.25);
+            } else {
                 for (let i=app.neuronRadius; i<this.distance + app.neuronRadius*0.75; i+=6) {
                     point(this.master.x + this.normalizedX*i, this.master.y + this.normalizedY*i);
                 }
-            } else {
-                line(this.master.x + this.normalizedX*app.neuronRadius*1.25, this.master.y + this.normalizedY*app.neuronRadius*1.25, this.slave.x - this.normalizedX*app.neuronRadius*1.25, this.slave.y - this.normalizedY*app.neuronRadius*1.25);
             }
             line(this.slave.x - this.normalizedX*app.neuronRadius*1.25 + this.normalizedY * 6, this.slave.y - this.normalizedY*app.neuronRadius*1.25 - this.normalizedX * 6, this.slave.x - this.normalizedX*app.neuronRadius*1.25 - this.normalizedY * 6, this.slave.y - this.normalizedY*app.neuronRadius*1.25 + this.normalizedX * 6);
         
