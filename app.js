@@ -16,6 +16,7 @@ const app = {
         frequencyStabilize: 1, // Hz/s
         frequencyIncrement: 1,
         frequencyDecrement: 1,
+        frequencyLimit: 10,
 
         decayMode: "linear",
         exponentialDecay: 2, // Antall sekunder
@@ -469,13 +470,15 @@ class Neuron{
     }
 
     updatePotential() {
-        // Sjekker først om potensialet er utenfor grensene
         if (this.spontaneousActivity) {
             // Sørger for at egenfrekvensen ikke blir negativ
             if (this.frequency < 0) {
                 this.frequency = 0;
+            } else if (this.frequency > app.network.frequencyLimit) { // Og at den ikke overskrider maksimal frekvens
+                this.frequency = app.network.frequencyLimit;
             }
 
+            // Fyrer med riktig frekvens hvis nevronet har egenfrekvens
             if (this.frequencyCounter < round(60/this.frequency)) {
                 ++this.frequencyCounter;
             } else {
@@ -483,7 +486,7 @@ class Neuron{
                 this.frequencyCounter = 0;
             }
             
-            // stabiliserer frekvensen
+            // Stabiliserer frekvensen
             if (this.frequency > app.network.baseFrequency) {
                 this.frequency -= app.network.frequencyStabilize/60;
                 if (this.frequency < app.network.baseFrequency) {
