@@ -1,7 +1,8 @@
 # Hjernebyggesettet
 
 # Todo
-- [ ] Place source files in folders
+- [x] Place source files in folders
+- [ ] Start using Parcel for bundling 
 - [ ] Refactor CSS
 - [ ] Modularize JS
 - [ ] Refactor HTML

@@ -70,7 +70,7 @@ const app = {
             },
             display: function() {},
             inactiveDisplay: function() {},
-            img: "move.png",
+            img: "images/move.png",
             buttonElement: undefined,
 
             neuron: null,
@@ -114,7 +114,7 @@ const app = {
             release: function() {},
             display: function() {},
             inactiveDisplay: function() {},
-            img: "excite.png",
+            img: "images/excite.png",
             buttonElement: undefined
         },
         { // Flashlight tool
@@ -149,7 +149,7 @@ const app = {
                 ellipse(mouseX, mouseY, this.radius*2, this.radius*2);
             },
             inactiveDisplay: function() {},
-            img: "flashlight.png",
+            img: "images/flashlight.png",
             buttonElement: undefined,
 
             pressing: false,
@@ -177,7 +177,7 @@ const app = {
                 ellipse(mouseX, mouseY, app.neuronRadius*2, app.neuronRadius*2);
             },
             inactiveDisplay: function() {},
-            img: "neuron.png",
+            img: "images/neuron.png",
             buttonElement: undefined
         },/*
         { // Excitatory synapse tool
@@ -317,7 +317,7 @@ const app = {
                 }
             },
             inactiveDisplay: function() {},
-            img: "excitatory_dependent.png",
+            img: "images/excitatory_dependent.png",
             buttonElement: undefined,
 
             masterNeuron: null
@@ -361,7 +361,7 @@ const app = {
                 }
             },
             inactiveDisplay: function() {},
-            img: "inhibitory_dependent.png",
+            img: "images/inhibitory_dependent.png",
             buttonElement: undefined,
 
             masterNeuron: null
@@ -429,7 +429,7 @@ const app = {
                 }
             },
             inactiveDisplay: function() {},
-            img: "delete.png",
+            img: "images/delete.png",
             buttonElement: undefined
         }
     ],
