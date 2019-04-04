@@ -25,6 +25,9 @@ const toolBannerHeight = 40
 const toolBannerWidth = 20
 const neuronRadius = 20
 
+const INHIBITORY_COLOR  = '#fa4b4b'
+const EXCITATORY_COLOR  = '#28cd75'
+
 
 function millis() {
   return Number(new Date())
@@ -312,11 +315,17 @@ export default class Network {
         ctx.strokeStyle = '#fff'
       }
 
-      ctx.fillStyle = '#0b0'
+      ctx.fillStyle = EXCITATORY_COLOR
       ctx.beginPath()
-      ctx.arc(posX, posY, neuronRadius / viewZ, 0, Math.PI * 2)
+      ctx.arc(posX, posY, neuronRadius / viewZ, 0, Math.PI*2)
       ctx.fill()
+
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 3 / viewZ
+      ctx.beginPath()
+      ctx.arc(posX, posY, neuronRadius * 0.55 / viewZ, 0, Math.PI*2)
       ctx.stroke()
+      ctx.lineWidth = 1
 
       if (n.spontaneousActivity) {
         ctx.fillStyle = '#fff'
