@@ -5,7 +5,11 @@
 ///////////////////////////////////////////////
 
 const canvas = document.querySelector('#workspace')
-if (canvas) {
+const wrapper = document.querySelector('#workspace-wrapper')
+const topBanner = document.querySelector('#topbanner')
+const toolBanner = document.querySelector('#toolbanner')
+
+if (canvas && wrapper && topBanner && toolBanner) {
     const ctx = canvas.getContext('2d')
     let mouseX = 0
     let mouseY = 0
@@ -1036,8 +1040,10 @@ if (canvas) {
             app.network.neurons[i].constrainPosition();
         }
         // endrer størrelsen på canvas
-        canvas.width = window.innerWidth
-        canvas.height = window.innerHeight 
+        console.log(wrapper.clientWidth, wrapper.clientHeight)
+        const wrapperRect = wrapper.getBoundingClientRect()
+        canvas.width = wrapperRect.width
+        canvas.height = wrapperRect.height
     };
 
     window.addEventListener('keypress', keyPressed)
