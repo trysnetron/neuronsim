@@ -1,0 +1,27 @@
+{
+  "name": "neuronsim",
+  "version": "1.0.0",
+  "description": "# Todo - [x] Place source files in folders - [ ] Start using Parcel for bundling  - [ ] Refactor CSS - [ ] Modularize JS - [ ] Refactor HTML",
+  "main": "src/index.html",
+  "scripts": {
+    "start": "parcel src/index.html -d public --open",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/Trysnetron/NeuronSim.js.git"
+  },
+  "keywords": [
+    "neuron",
+    "neuralnetwork"
+  ],
+  "author": "Trym Sneltvedt",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/Trysnetron/NeuronSim.js/issues"
+  },
+  "homepage": "https://gitlab.com/Trysnetron/NeuronSim.js#readme",
+  "dependencies": {
+    "parcel-bundler": "^1.12.3"
+  }
+}

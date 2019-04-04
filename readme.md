@@ -2,7 +2,8 @@
 
 # Todo
 - [x] Place source files in folders
-- [ ] Start using Parcel for bundling 
+- [x] Start using Parcel for bundling 
+- [ ] Remove dependency on p5.js
 - [ ] Refactor CSS
 - [ ] Modularize JS
 - [ ] Refactor HTML
