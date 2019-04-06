@@ -1,14 +1,18 @@
+import Network from './network'
+import View from './view'
+import StateStack from './statestack'
 
 /**
- * 
- * @param {Object} params
+ * Create new main controller
+ * @param {View} workspaceView Workspace view
+ * @param {Network} networkModel Neural network model
  */
-export default function createController(etworkModel, workspaceView) {
+export default function createController(networkModel, workspaceView) {
 
-  const stateStack = []
+  let stateStack = new StateStack()
 
   function mouseMove(viewState) {   
-    const activeState = stateStack[stateStack.length - 1]
+    const activeState = stateStack.top()
     if (activeState) {
       switch (activeState.label) {
         case 'DRAGGING_NEURON':
@@ -20,16 +24,22 @@ export default function createController(etworkModel, workspaceView) {
   }
 
   function mouseDown(viewState) {
-    const activeState = stateStack[stateStack.length - 1]
+    const activeState = stateStack.top()
     if (activeState) {
       switch (activeState.label) {
-        default:   
+        case 'CREATE_NEURON':
+          networkModel.createNeuron({
+            x: viewState.mouseX, 
+            y: viewState.mouseY
+          })
+          stateStack.pop()
+          break
+        default:    
       }
     } else {
       if (viewState.hoverNeuron) {
         // Start draggin neuron
-        stateStack.push({
-          label: 'DRAGGING_NEURON',
+        stateStack.push('DRAGGING_NEURON', {
           offsetX: viewState.hoverNeuron.x - viewState.mouseX,
           offsetY: viewState.hoverNeuron.y - viewState.mouseY,
           neuron: viewState.hoverNeuron
@@ -40,7 +50,7 @@ export default function createController(etworkModel, workspaceView) {
 
   function mouseUp(viewState) {
     // State management
-    const activeState = stateStack[stateStack.length - 1]
+    const activeState = stateStack.top()
     if (activeState) {
       switch (activeState.label) {
         case 'DRAGGING_NEURON':
@@ -54,6 +64,15 @@ export default function createController(etworkModel, workspaceView) {
   workspaceView.on('mousedown', mouseDown)
   workspaceView.on('mouseup', mouseUp)
 
+  document.addEventListener('keypress', event => {
+    switch (event.key) {
+      case '1':
+        stateStack.flush()
+        stateStack.push('CREATE_NEURON')
+        console.log('CREATE_NEURON pushed to stack')
+        break
+    }
+  })
 
   function renderWorkspace() {
     // Render neural network to workspace
