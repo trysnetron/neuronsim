@@ -25,9 +25,6 @@ const toolBannerHeight = 40
 const toolBannerWidth = 20
 const neuronRadius = 20
 
-const INHIBITORY_COLOR  = '#fa4b4b'
-const EXCITATORY_COLOR  = '#28cd75'
-
 
 function millis() {
   return Number(new Date())
@@ -270,96 +267,6 @@ export default class Network {
 
   }
 
-
-  /**
-   * Render the neural network to a CanvasAPI 2d context, with a given offset.
-   * @param {CanvasRenderingContext2D} ctx 
-   * @param {Number} offsetX
-   * @param {Number} offsetY
-   */
-  render(ctx, viewX, viewY, viewZ) {
-    // Render Synapses
-    this.synapses.forEach(s => {
-      ctx.strokeStyle = (s.type == "excitatory") ? '#090' : '#900'
-
-      if (s.distance > 0) {
-        ctx.beginPath()
-        ctx.moveTo(s.master.x + s.normalizedX * neuronRadius * 1.25, s.master.y + s.normalizedY * neuronRadius * 1.25)
-        ctx.lineTo(s.slave.x - s.normalizedX * neuronRadius * 1.25, s.slave.y - s.normalizedY * neuronRadius * 1.25)
-
-        ctx.moveTo(s.slave.x - s.normalizedX * neuronRadius * 1.25 + s.normalizedY * 6, s.slave.y - s.normalizedY * neuronRadius * 1.25 - s.normalizedX * 6)
-        ctx.lineTo(s.slave.x - s.normalizedX * neuronRadius * 1.25 - s.normalizedY * 6, s.slave.y - s.normalizedY * neuronRadius * 1.25 + s.normalizedX * 6)
-        ctx.stroke()
-
-        // Draw action potentials
-        ctx.strokeStyle = '#ff0'
-        s.pulses.forEach(p => {
-          ctx.beginPath()
-          ctx.moveTo(s.master.x + s.normalizedX * (neuronRadius + p * s.distance) + s.normalizedY * 5,
-            s.master.y + s.normalizedY * (neuronRadius + p * s.distance) - s.normalizedX * 5)
-          ctx.lineTo(s.master.x + s.normalizedX * (neuronRadius + p * s.distance) - s.normalizedY * 5,
-            s.master.y + s.normalizedY * (neuronRadius + p * s.distance) + s.normalizedX * 5)
-          ctx.stroke()
-        })
-      }
-    })
-
-    // Render neurons
-    this.neurons.forEach(n => {
-      const posX = (n.x + viewX) / viewZ
-      const posY = (n.y + viewY) / viewZ
-
-      if (!n.spontaneousActivity && (millis() - n.lastPulseTimestamp) <= pulseLightDuration) {
-        ctx.strokeStyle = '#ff0'
-      } else {
-        ctx.strokeStyle = '#fff'
-      }
-
-      ctx.fillStyle = EXCITATORY_COLOR
-      ctx.beginPath()
-      ctx.arc(posX, posY, neuronRadius / viewZ, 0, Math.PI*2)
-      ctx.fill()
-
-      ctx.strokeStyle = '#fff'
-      ctx.lineWidth = 3 / viewZ
-      ctx.beginPath()
-      ctx.arc(posX, posY, neuronRadius * 0.55 / viewZ, 0, Math.PI*2)
-      ctx.stroke()
-      ctx.lineWidth = 1
-
-      if (n.spontaneousActivity) {
-        ctx.fillStyle = '#fff'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.font = '10 sans-serif'
-        ctx.fillText(n.frequency.toPrecision(2) + "Hz", posX, posY)
-        ctx.textAlign = 'left'
-        ctx.textBaseline = 'top'
-        ctx.font = '12 sans-serif'
-      } else {
-        if (n.potential >= 0) {
-          ctx.fillStyle = '#080'
-          ctx.beginPath()
-          ctx.arc(posX, posY, neuronRadius * n.potentialCompletion, 0, Math.PI * 2)
-          ctx.fill()
-        } else {
-          ctx.fillStyle = '#800'
-          ctx.beginPath()
-          ctx.arc(posX, posY, neuronRadius * -n.potentialCompletion, 0, Math.PI * 2)
-          ctx.fill()
-        }
-      }
-      if (this.group) {
-        // Tegner sirkel som indikerer at nevronet er i en gruppe
-        ctx.strokeStyle = '#ff0'
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, 2 * neuronRadius, 0, Math.PI * 2)
-        ctx.stroke()
-      }
-    })
-  }
-  
-
   /**
    * Adds a new neuron to the network
    * @param {Object} options
@@ -408,21 +315,5 @@ export default class Network {
 
     // Remove from dendrite list of slave neuron
     synapse.slave.dendrites = synapse.slave.dendrites.filter(s => (s !== synapse))
-  }
-
-
-  toWorkspaceCoords(x, y, viewX, viewY, viewZ) {
-    return {
-      x: (x - viewX) / viewZ,
-      y: (y - viewY) / viewZ
-    }
-  }
-
-
-  overNeuron(mouseX, mouseY, viewX, viewY, viewZ) {
-    const translated = this.toWorkspaceCoords(mouseX, mouseY, viewX, viewY, viewZ)
-    return this.neurons.find(n => {
-      return (Math.hypot(translated.x - n.x, translated.y - n.y) <= neuronRadius)
-    })
   }
 }

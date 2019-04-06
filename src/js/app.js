@@ -1,5 +1,5 @@
-
 import Network from './network'
+import View from './view'
 
 function startApp() {
   const canvas = document.querySelector('#workspace')
@@ -11,24 +11,24 @@ function startApp() {
   if (!topBanner) throw Error('#topbanner not found')
   if (!toolBanner) throw Error('#toolbanner not found')
 
-  const ctx = canvas.getContext('2d')
   let mouseX = 0
   let mouseY = 0
   let viewX = 200
   let viewY = 200
   let viewZ = 1
 
-
   const stateStack = []
 
   const network = new Network()
-
   network.createNeuron({x: 100, y: 100})
+  network.createNeuron({x: 200, y: 200})
+  
+  const view = new View(canvas, network)
+
   
   function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    
-    network.render(ctx, viewX, viewY, viewZ)
+    // Render neural network to workspace
+    view.renderNetwork()
 
     requestAnimationFrame(render)
   }
@@ -39,54 +39,38 @@ function startApp() {
     canvas.height = wrapperRect.height
   }
 
-  function mouseMove(event) {
-    // Update mouse position
-    {
-      const bounding = canvas.getBoundingClientRect()
-      mouseX = event.clientX - bounding.left
-      mouseY = event.clientY - bounding.top
-
-      topBanner.innerText = `${mouseX} ${mouseY}`
-    }
-
-    // State management
+  function mouseMove(viewState) {   
     const activeState = stateStack[stateStack.length - 1]
     if (activeState) {
       switch (activeState.label) {
         case 'DRAGGING_NEURON':
-          const translated = network.toWorkspaceCoords(mouseX, mouseY, viewX, viewY, viewZ)
-          activeState.neuron.x = translated.x + activeState.offsetX
-          activeState.neuron.y = translated.y + activeState.offsetY
+          activeState.neuron.x = viewState.mouseX + activeState.offsetX
+          activeState.neuron.y = viewState.mouseY + activeState.offsetY
           break
       }
     }
   }
 
-  function mouseDown(event) {
-    // Selected neuron
-    const selectedNeuron = network.overNeuron(mouseX, mouseY, viewX, viewY, viewZ)
-
-    // State management
+  function mouseDown(viewState) {
     const activeState = stateStack[stateStack.length - 1]
     if (activeState) {
       switch (activeState.label) {
         default:   
       }
     } else {
-      if (selectedNeuron) {
+      if (viewState.hoverNeuron) {
         // Start draggin neuron
-        const translated = network.toWorkspaceCoords(mouseX, mouseY, viewX, viewY, viewZ)
         stateStack.push({
           label: 'DRAGGING_NEURON',
-          offsetX: selectedNeuron.x - translated.x,
-          offsetY: selectedNeuron.y - translated.y,
-          neuron: selectedNeuron
+          offsetX: viewState.hoverNeuron.x - viewState.mouseX,
+          offsetY: viewState.hoverNeuron.y - viewState.mouseY,
+          neuron: viewState.hoverNeuron
         })
       }
     }
   }
 
-  function mouseUp(event) {
+  function mouseUp(viewState) {
     // State management
     const activeState = stateStack[stateStack.length - 1]
     if (activeState) {
@@ -100,9 +84,9 @@ function startApp() {
 
   window.addEventListener("resize", updateWorkspaceSize)
 
-  canvas.addEventListener('mousemove', mouseMove)
-  canvas.addEventListener('mousedown', mouseDown)
-  canvas.addEventListener('mouseup', mouseUp)
+  view.on('mousemove', mouseMove)
+  view.on('mousedown', mouseDown)
+  view.on('mouseup', mouseUp)
 
   updateWorkspaceSize()
   render()
