@@ -16,9 +16,8 @@ function updateWorkspaceSize() {
   canvas.width = wrapperRect.width
   canvas.height = wrapperRect.height
 }
-
-window.addEventListener("resize", updateWorkspaceSize)
 updateWorkspaceSize()
+window.addEventListener("resize", updateWorkspaceSize)
 
 const network = new Network()
 network.createNeuron({x: 100, y: 100})
