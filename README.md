@@ -6,6 +6,7 @@
 - [x] Remove dependency on p5.js
 - [x] Refactor CSS
 - [x] Refactor HTML
+- [ ] Implement synapse drawing
 - [ ] Add tools from previous version
   - [x] Create neurons
   - [ ] Delete neurons
