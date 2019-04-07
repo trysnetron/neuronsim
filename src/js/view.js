@@ -1,7 +1,12 @@
+import { start } from "repl";
+
 const INHIBITORY_COLOR = '#fa4b4b'
 const EXCITATORY_COLOR = '#28cd75'
 
 const NEURON_RADIUS = 20
+const SYNAPSE_RADIUS_START = NEURON_RADIUS
+const SYNAPSE_RADIUS_CTRL = 0.3 * NEURON_RADIUS
+const SYNAPSE_RADIUS_STOP = 0.2 * NEURON_RADIUS
 
 
 export default class View {
@@ -82,6 +87,13 @@ export default class View {
     this.ctx.scale(this.viewZoom, this.viewZoom)
     // TODO Render synapses
 
+    this.renderSynapse({
+      startX: 100, startY: 100, 
+      ctrlX: this.state.mouseX, ctrlY: this.state.mouseY,
+      stopX: 300, stopY: 300,
+      inhibitory: false
+    })
+
     // Render neurons
     this.neuronModel.neurons.forEach(n => {
       this.renderNeuron({
@@ -123,6 +135,61 @@ export default class View {
     this.ctx.arc(x, y, NEURON_RADIUS * 0.55, 0, Math.PI * 2)
     this.ctx.stroke()
     this.ctx.lineWidth = 1
+  }
+
+  renderSynapse({startX, startY, ctrlX, ctrlY, stopX, stopY, inhibitory}) {
+    
+    const dStartCtrlX = ctrlX - startX
+    const dStartCtrlY = ctrlY - startY
+    const hStartCtrl = Math.hypot(dStartCtrlX, dStartCtrlY)
+    const nStartCtrlX = dStartCtrlX / hStartCtrl
+    const nStartCtrlY = dStartCtrlY / hStartCtrl
+    
+    const dCtrlStopX = stopX - ctrlX
+    const dCtrlStopY = stopY - ctrlY
+    const hCtrlStop = Math.hypot(dCtrlStopX, dCtrlStopY)
+    const nCtrlStopX = dCtrlStopX / hCtrlStop
+    const nCtrlStopY = dCtrlStopY / hCtrlStop
+    
+    /*
+    const dStartStopX = stopX - startX
+    const dStartStopY = stopY - startY
+    const hStartStop = Math.hypot(dStartStopX, dStartStopY)
+    const nStartStopX = dStartStopX / hStartStop
+    const nStartStopY = dStartStopY / hStartStop
+    */
+
+    const dMidCtrlX = ctrlX - startX + (stopX - startX)/2
+    const dMidCtrlY = ctrlY - startY + (stopY - startY)/2
+    const hMidCtrl = Math.hypot(dMidCtrlX, dMidCtrlY)
+    const nMidCtrlX = dMidCtrlX / hMidCtrl
+    const nMidCtrlY = dMidCtrlY / hMidCtrl
+
+    
+    this.ctx.beginPath()
+    this.ctx.moveTo(
+      startX + nStartCtrlY * SYNAPSE_RADIUS_START,
+      startY - nStartCtrlX * SYNAPSE_RADIUS_START,
+    )
+    this.ctx.quadraticCurveTo(
+      ctrlX + nMidCtrlX * SYNAPSE_RADIUS_CTRL,
+      ctrlY - nMidCtrlY * SYNAPSE_RADIUS_CTRL,
+      stopX + nCtrlStopY * SYNAPSE_RADIUS_STOP,
+      stopY - nCtrlStopX * SYNAPSE_RADIUS_STOP
+    )
+    this.ctx.lineTo(
+      stopX - nCtrlStopY * SYNAPSE_RADIUS_STOP,
+      stopY + nCtrlStopX * SYNAPSE_RADIUS_STOP
+    )
+    this.ctx.quadraticCurveTo(
+      ctrlX - nMidCtrlY * SYNAPSE_RADIUS_CTRL,
+      ctrlY + nMidCtrlX * SYNAPSE_RADIUS_CTRL,
+      startX - nStartCtrlY * SYNAPSE_RADIUS_START,
+      startY + nStartCtrlX * SYNAPSE_RADIUS_START
+    )
+    this.ctx.closePath()
+    this.ctx.fillStyle = inhibitory ? INHIBITORY_COLOR : EXCITATORY_COLOR
+    this.ctx.fill()
   }
 
 
