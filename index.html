@@ -2,13 +2,711 @@
 
 <html>
     <head>
-        <title>Nevronsimulator</title>
+        <style>
+            :root {
+                --color-background: #111111;
+                --color-detail:     #EEE;
+            }
 
-        <link rel="stylesheet" type="text/css" href="style.css">
-        <script src="p5.min.js"></script>
-        <script src="p5.dom.min.js"></script>
-        <script src="app.js"></script>
+            * {
+                padding: 0;
+                margin: 0;
+                border: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                cursor: default;
+                background-color: var(--color-background);
+                font-family: monospace;
+                font-size: 12px;
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden; 
+            }
+
+            #app {
+               width:100%;
+               display: flex;
+               flex-direction: column;
+            }
+
+            #canvas-wrapper {
+                width: 100%;
+                flex-grow: 1;
+            }
+
+            #tools {
+                display: flex;
+                width: 100%;
+                color: var(--color-detail);
+                border-bottom: 2px solid var(--color-detail);
+            }
+
+            .tool {
+                padding: 4px 16px;
+                border-right: 2px solid var(--color-detail);
+            }
+
+            .selected {
+                color: var(--color-background);
+                background-color: var(--color-detail);
+                border-bottom-width: 0;
+            }
+        </style>
+        <title>Nevronsimulator</title>
     </head>
     <body>
+        <main id="app">
+            <div id="tools"></div>
+            <div id="canvas-wrapper">
+                <canvas id="canvas" width="640" height="640"></canvas>
+            </div>
+        </main>
+
+        <script>
+            // ------------------------------------------------------------------------------------
+            //                             Neural Network Simulator
+            //                                By Trym Sneltvedt
+            // ------------------------------------------------------------------------------------
+
+
+            //                                  App config
+            // ------------------------------------------------------------------------------------            
+
+            const VERSION                                  = '2.0.0'
+
+            const COLOR_INHIBITORY                         = '#be0000'
+            const COLOR_EXCITATORY                         = '#00aa00'
+            const COLOR_SPONTANEOUS                        = '#6060e0'
+            const COLOR_DETAIL                             = '#eeeeee'
+            const COLOR_BACKGROUND                         = '#111111'
+            const COLOR_ACTIONPOTENTIAL                    = '#eeee00'
+
+            const NEURON_RADIUS                            = 20
+            const FIRE_LIGHT_DURATION                      = 2 // s
+            const SYNAPSE_SPACING                          = 8
+            const SYNAPSE_CAP                              = 8
+            const ACTION_POTENTIAL_CAP                     = 6
+            const SYNAPSE_BUTTON_RADIUS                    = 15
+
+            const DEFAULT_RESTING_POTENTIAL                = 50   // mV
+            const DEFAULT_AFTERHYPERPOLARIZATION_POTENTIAL = 0    // mV
+            const DEFAULT_THRESHOLD_POTENTIAL              = 90   // mV
+            const DEFAULT_TIME_CONSTANT                    = 1    // mV
+            const DEFAULT_ACTION_POTENTIAL_SPEED           = 200  // pixels / s
+            const DEFAULT_BASE_FREQUENCY                   = 1    // Hz
+
+            const TOOLS = {
+                MOVE: 'Move',
+                EXCITE: 'Excite',
+                NEURON: 'Neuron',
+                SPONTANEOUS_NEURON: 'Spontaneous Neuron',
+                SYNAPSE_EXCITATORY: 'Excitatory Synapse',
+                SYNAPSE_INHIBITORY: 'Inhibitory Synapse',
+                DELETE: 'Delete'
+            }
+
+            //                                      Core
+            // ------------------------------------------------------------------------------------
+            class Neuron{
+                constructor(x, y, spontaneousActivity=false) {
+                    this.x = x
+                    this.y = y
+
+                    this.restingPotential = DEFAULT_RESTING_POTENTIAL
+                    this.afterHyperPolarizationPotential = DEFAULT_AFTERHYPERPOLARIZATION_POTENTIAL
+                    this.thresholdPotential = DEFAULT_THRESHOLD_POTENTIAL
+                    this.timeConstant = DEFAULT_TIME_CONSTANT
+
+                    this.spontaneousActivity = spontaneousActivity
+
+                    this.msSinceLastFire = spontaneousActivity ? 0 : 1e6 // A long time since last fire
+                    this.msSinceLastStimulus = 1e6
+                    this.potentialAtLastStimulus = this.restingPotential
+
+                    this.baseFrequency = 1
+
+                    this.axons = []
+                    this.dendrites = []
+                    
+                    this.actionPotentials = []
+                }
+
+                get potential() {
+                    const exp = Math.exp(-this.msSinceLastStimulus / this.timeConstant)
+                    const deltaPotential = this.potentialAtLastStimulus - this.restingPotential
+                    return this.restingPotential + deltaPotential * exp
+                }
+
+
+                get normalizedPotential() {
+                    const range = this.potential >= this.restingPotential
+                                ? this.thresholdPotential - this.restingPotential
+                                : this.restingPotential - this.afterHyperPolarizationPotential
+                    return (this.potential - this.restingPotential) / range
+                }
+
+                get frequency() {
+                    return this.baseFrequency
+                }
+
+                update(dt) {
+                    this.msSinceLastFire += dt
+                    this.msSinceLastStimulus += dt
+
+                    if (this.spontaneousActivity) {
+                        if (this.msSinceLastFire >= 1 / this.frequency) {
+                            this.fire()
+                            this.msSinceLastFire = 0
+                        }
+                    }
+                }
+
+                stimulate(dp) {
+                    this.potentialAtLastStimulus = this.potential + dp
+                    this.msSinceLastStimulus = 0
+
+                    if (!this.spontaneousActivity) {
+                        if (this.potential >= this.thresholdPotential) {
+                            this.msSinceLastFire = 0
+                            this.potentialAtLastStimulus = this.afterHyperPolarizationPotential
+                            this.fire()
+                        }
+                    }
+                }
+
+                fire() {
+                    this.axons.forEach(a => a.createActionPotential())
+                }
+            }
+
+            class Synapse {
+                /**
+                 * @param {Neuron} master
+                 * @param {Neuron} slave
+                 * @param {boolean} inhibitory
+                 */
+                constructor(master, slave, inhibitory=false) {
+                    this.master = master
+                    this.slave = slave
+                    this.inhibitory = inhibitory
+                    this.actionPotentials = []
+                    this.strength = 30
+                }
+
+                createActionPotential() {
+                    this.actionPotentials.push(0);
+                }
+
+                get distance() {
+                    return Math.hypot(this.slave.x - this.master.x, this.slave.y - this.master.y)
+                }
+
+                get normX() {
+                    return (this.slave.x - this.master.x) / this.distance
+                }
+
+                get normY() {
+                    return (this.slave.y - this.master.y) / this.distance
+                }
+                
+                get x() {
+                    return (this.master.x - this.slave.x) / 2 + this.slave.x
+                }
+
+                get y() {
+                    return (this.master.y - this.slave.y) / 2 + this.slave.y
+                }
+
+                update(dt) {
+                    const dap = DEFAULT_ACTION_POTENTIAL_SPEED * dt / this.distance
+                    const originalLength = this.actionPotentials.length
+                    this.actionPotentials = this.actionPotentials
+                        .map(ap => ap + dap)
+                        .filter(ap => ap < 1)
+
+                    const completions = originalLength - this.actionPotentials.length
+                    for (let i = 0; i < completions; i++) {
+                        this.slave.stimulate(this.strength * (this.inhibitory ? -1 : 1))
+                    }
+                }
+            }
+
+            class Network {
+                constructor() {
+                    this.neurons = []
+                    this.synapses = []
+                }
+
+                createNeuron(neuron) {
+                    this.neurons.push(neuron)
+                }
+
+                deleteNeuron(neuron) {
+                    while (neuron.axons.length) this.deleteSynapse(neuron.axons[0])
+                    while (neuron.dendrites.length) this.deleteSynapse(neuron.dendrites[0])
+                    this.neurons = this.neurons.filter(n => n !== neuron)
+                }
+
+                createSynapse(synapse) {
+                    synapse.master.axons.push(synapse)
+                    synapse.slave.dendrites.push(synapse)
+                    this.synapses.push(synapse)
+                }
+
+                deleteSynapse(synapse) {
+                    this.synapses = this.synapses.filter(s => s !== synapse)
+                    this.neurons.forEach(n => {
+                        n.axons = n.axons.filter(s => s !== synapse)
+                        n.dendrites = n.dendrites.filter(s => s !== synapse)
+                    })
+                }
+
+                update(dt) {
+                    this.neurons.forEach(n => n.update(dt))
+                    this.synapses.forEach(s => s.update(dt))
+                }
+            }
+
+            //                          Utilities
+            // ------------------------------------------------------------------------------------
+
+            function createGameTimer({update, render}) {
+                const updateIncrement = 1 / 120
+                let lastTime = 0
+                let accumulator = 0
+                let tick = 0
+                let frameId = null
+
+                const onFrame = time => {
+                    if (lastTime !== null) {
+                        accumulator += (time - lastTime) / 1000
+                        while (accumulator > updateIncrement) {
+                            update(updateIncrement, tick)
+                            tick++
+                            accumulator -= updateIncrement
+                        }
+                    }
+                    lastTime = time;
+                    render()
+                    frameId = requestAnimationFrame(onFrame)
+                }
+
+                return {
+                    start() {
+                        lastTime = null
+                        frameId = requestAnimationFrame(onFrame)
+                    },
+                    stop() {
+                        cancelAnimationFrame(frameId)
+                    }
+                }
+            }
+
+            function userInput(currentState, eventType, params={}) {
+                const state = Object.assign({}, currentState)
+
+                switch (eventType) {
+                    case 'mousedown':
+                        state.mouseIsDown = true
+                        state.pressedOnNeuron = state.currentNeuron
+                        state.press.x = state.mouse.x
+                        state.press.y = state.mouse.y
+                        if (state.pressedOnNeuron) {
+                            state.offset.x = state.pressedOnNeuron.x - state.mouse.x
+                            state.offset.y = state.pressedOnNeuron.y - state.mouse.y
+                        }
+                        break
+                    case 'mouseup':
+                        state.mouseIsDown = false
+                        break
+                    case 'mousemove':
+                        state.mouse.x = params.mouseX
+                        state.mouse.y = params.mouseY
+
+                        state.currentNeuron = state.network.neurons.find(n => {
+                            const dist = Math.hypot(state.mouse.x - n.x, state.mouse.y - n.y)
+                            return dist < NEURON_RADIUS
+                        })
+                        state.currentSynapse = state.network.synapses.find(s => {
+                            const dist = Math.hypot(state.mouse.x - s.x, state.mouse.y - s.y)
+                            return dist < SYNAPSE_BUTTON_RADIUS
+                        })
+                        break
+                    case 'keypress':
+                        switch (params.kbcode) {
+                            case 'Space':
+                                state.paused = !state.paused
+                                break
+                            case 'KeyD':
+                                state.details = !state.details
+                                break
+                        }
+                        break
+
+                    default:
+                        throw Error(`Unsupported event type '${eventType}'`)
+                }
+
+                switch (state.tool) {
+                    case TOOLS.EXCITE:
+                        switch (eventType) {
+                            case 'mousedown':
+                                if (state.currentNeuron) {
+                                    state.currentNeuron.fire()
+                                    console.log('fire')
+                                }
+                                break
+                        }
+                        break
+
+                    case TOOLS.NEURON:
+                    case TOOLS.SPONTANEOUS_NEURON:
+                        switch (eventType) {
+                            case 'mousedown':
+                                state.network.createNeuron(new Neuron(
+                                    state.mouse.x, 
+                                    state.mouse.y,
+                                    state.tool === TOOLS.SPONTANEOUS_NEURON
+                                ))
+                                break
+                        }
+                        break
+
+                    case TOOLS.SYNAPSE_EXCITATORY:
+                    case TOOLS.SYNAPSE_INHIBITORY:
+                        switch (eventType) {
+                            case 'mousedown':
+                                if (state.currentNeuron) {
+                                    if (state.synapseStartNeuron) {
+                                        if (state.currentNeuron !== state.synapseStartNeuron) {
+                                            state.network.createSynapse(new Synapse(state.synapseStartNeuron, 
+                                                                                    state.currentNeuron,
+                                                                                    state.tool === TOOLS.SYNAPSE_INHIBITORY))
+                                            state.synapseStartNeuron = undefined
+                                        }
+                                    } else {
+                                        state.synapseStartNeuron = state.currentNeuron
+                                    }
+                                } else {
+                                    state.synapseStartNeuron = undefined
+                                }
+                                break
+                            case 'mouseup':
+                                if (state.currentNeuron) {
+                                    if (state.synapseStartNeuron && state.currentNeuron !== state.synapseStartNeuron) {
+                                        state.network.createSynapse(new Synapse(state.synapseStartNeuron, 
+                                                                                    state.currentNeuron,
+                                                                                    state.tool === TOOLS.SYNAPSE_INHIBITORY))
+                                        state.synapseStartNeuron = undefined
+                                    }
+                                } else {
+                                    state.synapseStartNeuron = undefined
+                                }
+                                break
+                        }
+                        break
+                    
+                    case TOOLS.DELETE:
+                        switch (eventType) {
+                            case 'mousedown':
+                                if (state.currentNeuron) {
+                                    state.network.deleteNeuron(state.currentNeuron)
+                                    state.currentNeuron = undefined
+                                } else if (state.currentSynapse) {
+                                    state.network.deleteSynapse(state.currentSynapse)
+                                    state.currentSynapse = undefined
+                                }
+                                break
+                        }
+                        break
+
+                    case TOOLS.MOVE:
+                    default:
+                        switch (eventType) {
+                            case 'mousemove':
+                                if (state.pressedOnNeuron && state.mouseIsDown) {
+                                    state.pressedOnNeuron.x = state.mouse.x + state.offset.x
+                                    state.pressedOnNeuron.y = state.mouse.y + state.offset.y
+                                }
+                                break
+                        }
+                }
+
+                return state
+            }
+    
+            //                                   App launch
+            // ------------------------------------------------------------------------------------
+
+            window.onload = () => {
+                let state = {
+                    mouse: { x: 0, y: 0 },
+                    offset: { x: 0, y: 0 },
+                    press: { x: 0, y: 0 },
+                    mouseIsDown: false,
+                    currentNeuron: undefined,
+                    currentSynapse: undefined,
+                    pressedOnNeuron: undefined,
+                    synapseStartNeuron: undefined,
+                    network: new Network(),
+                    tool: tools[0],
+                    simulationRate: 1,
+                    paused: false,
+                    details: false
+                }
+
+                const toolsBanner = document.getElementById('tools')
+
+                Object.values(TOOLS).forEach((t, i) => {
+                    const elem = document.createElement('div')
+                    elem.innerText = t
+                    elem.classList.add('tool')
+                    toolsBanner.appendChild(elem)
+
+                    elem.addEventListener('click', event => {
+                        toolsBanner.childNodes.forEach(cn => cn.classList.remove('selected'))
+                        state.tool = t
+                        elem.classList.add('selected')
+                    })
+
+                    if (i === 0) {
+                        elem.classList.add('selected')
+                    }
+                })
+
+                const canvasWrapper = document.getElementById('canvas-wrapper')
+                const canvas = document.getElementById('canvas')
+                const ctx = canvas.getContext('2d')
+
+
+
+                const n1 = new Neuron(100, 100, true)
+                const n2 = new Neuron(400, 100)
+                const n3 = new Neuron(250, 400)
+
+                const s1 = new Synapse(n1, n2)
+                const s2 = new Synapse(n1, n3)
+                const s3 = new Synapse(n2, n3)
+
+                state.network.createNeuron(n1)
+                state.network.createNeuron(n2)
+                state.network.createNeuron(n3)
+                state.network.createSynapse(s1)
+                state.network.createSynapse(s2)
+                state.network.createSynapse(s3)
+                
+                
+
+                const gt = createGameTimer({
+                    update: dt => {
+                        if (!state.paused) state.network.update(dt * state.simulationRate)
+                    },
+                    render: () => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+                        ctx.fillStyle = '#505050'
+                        ctx.fillText('v' + VERSION, 10, canvas.height - 22)
+
+                        ctx.font = '12px monospace'
+                        ctx.textBaseline = 'top'
+
+                        ctx.lineWidth = 2
+
+                        
+
+                        // Synapse rendering
+                        state.network.synapses.forEach(s => {
+                            ctx.strokeStyle = s.inhibitory ? COLOR_INHIBITORY : COLOR_EXCITATORY
+
+                            const totalSpacing = NEURON_RADIUS + SYNAPSE_SPACING
+
+                            ctx.beginPath()
+                            ctx.moveTo(s.master.x + s.normX * totalSpacing,
+                                       s.master.y + s.normY * totalSpacing)
+                            ctx.lineTo(s.slave.x - s.normX * totalSpacing, 
+                                       s.slave.y - s.normY * totalSpacing)
+                            
+                            ctx.moveTo(s.slave.x - s.normX * totalSpacing + s.normY * SYNAPSE_CAP, 
+                                       s.slave.y - s.normY * totalSpacing - s.normX * SYNAPSE_CAP)
+                            ctx.lineTo(s.slave.x - s.normX * totalSpacing - s.normY * SYNAPSE_CAP, 
+                                       s.slave.y - s.normY * totalSpacing + s.normX * SYNAPSE_CAP)
+                            ctx.stroke()
+                            
+                            ctx.strokeStyle = 'rgb(240, 240, 0)'
+                            s.actionPotentials.forEach(ap => {
+                                const distanceTraveled = totalSpacing + ap * (s.distance - totalSpacing * 2)
+
+                                ctx.beginPath()
+                                ctx.moveTo(s.master.x + s.normX * distanceTraveled + s.normY * ACTION_POTENTIAL_CAP, 
+                                           s.master.y + s.normY * distanceTraveled - s.normX * ACTION_POTENTIAL_CAP)
+                                ctx.lineTo(s.master.x + s.normX * distanceTraveled - s.normY * ACTION_POTENTIAL_CAP, 
+                                           s.master.y + s.normY * distanceTraveled + s.normX * ACTION_POTENTIAL_CAP)
+                                ctx.stroke()
+                            }) 
+
+                            if (state.tool === TOOLS.DELETE) {
+                                ctx.strokeStyle = '#ff0000'
+                                ctx.beginPath();
+                                ctx.arc(s.x, s.y, SYNAPSE_BUTTON_RADIUS, 0, Math.PI * 2)
+                                ctx.stroke()
+                            } 
+                        })
+
+                        // Neuron rendering
+                        state.network.neurons.forEach(n => {
+
+                            ctx.fillStyle = COLOR_BACKGROUND
+                            ctx.beginPath();
+                            ctx.arc(n.x, n.y, NEURON_RADIUS, 0, Math.PI * 2)
+                            ctx.fill()
+                            
+                            if (n.spontaneousActivity) {
+                                ctx.fillStyle = COLOR_SPONTANEOUS + '99'
+                                ctx.beginPath()
+                                ctx.arc(n.x, n.y, (n.msSinceLastFire / (1 / n.frequency)) * NEURON_RADIUS, 0, Math.PI * 2)
+                                ctx.fill()
+
+                                ctx.fillStyle = COLOR_DETAIL + 'aa'
+                                ctx.font = '10px monospace'
+                                ctx.textAlign = 'center'
+                                ctx.textBaseline = 'middle'
+                                ctx.fillText(n.frequency.toPrecision(2) + 'Hz', n.x, n.y)
+                                ctx.textAlign = 'start'
+                                ctx.textBaseline = 'top'
+                                ctx.font = '12px monospace'
+                            } else {
+                                ctx.fillStyle = n.normalizedPotential >= 0 ? 'rgb(0, 120, 0)' : 'rgb(120, 0, 0)'
+                                ctx.beginPath()
+                                ctx.arc(n.x, n.y, Math.abs(n.normalizedPotential * NEURON_RADIUS), 0, Math.PI * 2)
+                                ctx.fill()
+                            }
+
+                            const fireLight = n.msSinceLastFire <= FIRE_LIGHT_DURATION
+
+                            ctx.strokeStyle = fireLight && !n.spontaneousActivity ? COLOR_ACTIONPOTENTIAL : COLOR_DETAIL
+                            if (state.tool === TOOLS.DELETE) {
+                                if (state.currentNeuron === n) {
+                                    ctx.strokeStyle = '#990000'
+                                    ctx.beginPath()
+                                    ctx.moveTo(n.x - NEURON_RADIUS, n.y - NEURON_RADIUS)
+                                    ctx.lineTo(n.x + NEURON_RADIUS, n.y + NEURON_RADIUS)
+                                    ctx.moveTo(n.x + NEURON_RADIUS, n.y - NEURON_RADIUS)
+                                    ctx.lineTo(n.x - NEURON_RADIUS, n.y + NEURON_RADIUS)
+                                    ctx.stroke()
+                                }
+                                ctx.strokeStyle = '#ff0000'
+                            } 
+                            ctx.fillStyle = COLOR_BACKGROUND
+
+                            ctx.beginPath();
+                            ctx.arc(n.x, n.y, NEURON_RADIUS, 0, Math.PI * 2)
+                            ctx.stroke()
+
+                            if (state.details) {
+                                ctx.fillStyle = 'rgba(17, 17, 17, 0.5)'
+                                ctx.fillRect(n.x + 24, n.y - 8, 96, 64)
+
+                                ctx.fillStyle = '#bbb'
+                                ctx.fillText(`${n.potential.toPrecision(3)}mV`, n.x + 32, n.y)
+                                ctx.fillText(`${n.msSinceLastFire.toPrecision(3)}s`, n.x + 32, n.y + 16)
+
+                                ctx.strokeStyle = COLOR_DETAIL
+                                ctx.moveTo(state.mouse.x - NEURON_RADIUS * 2, state.mouse.y)
+                                ctx.lineTo(state.mouse.x + NEURON_RADIUS * 2, state.mouse.y)
+                                ctx.moveTo(state.mouse.x, state.mouse.y - NEURON_RADIUS * 2)
+                                ctx.lineTo(state.mouse.x, state.mouse.y + NEURON_RADIUS * 2)
+                                ctx.stroke()
+                            }
+                        }) 
+
+                        // Render tool specifics
+                        switch(state.tool) {
+                            case TOOLS.NEURON:
+                            case TOOLS.SPONTANEOUS_NEURON:
+                                ctx.strokeStyle = state.tool === TOOLS.SPONTANEOUS_NEURON
+                                                    ? COLOR_SPONTANEOUS + 'bb'
+                                                    : COLOR_DETAIL + '77'
+                                ctx.beginPath()
+                                ctx.arc(state.mouse.x, state.mouse.y, NEURON_RADIUS, 0, Math.PI * 2)
+                                ctx.stroke()
+                                break
+                            case TOOLS.SYNAPSE_EXCITATORY:
+                            case TOOLS.SYNAPSE_INHIBITORY:
+                                const n = state.synapseStartNeuron
+                                if (n) {
+                                    const dx = state.mouse.x - state.synapseStartNeuron.x
+                                    const dy = state.mouse.y - state.synapseStartNeuron.y
+                                    const dist = Math.hypot(dx, dy)
+                                    const normx = dx / dist
+                                    const normy = dy / dist
+                                    const radius = NEURON_RADIUS + SYNAPSE_SPACING
+                                    if (dist > radius) {
+                                        ctx.strokeStyle = state.tool === TOOLS.SYNAPSE_EXCITATORY
+                                                        ? COLOR_EXCITATORY + '77'
+                                                        : COLOR_INHIBITORY + '77'
+                                        ctx.beginPath()
+                                        ctx.moveTo(n.x + normx * radius, n.y + normy * radius)
+                                        ctx.lineTo(state.mouse.x, state.mouse.y)
+                                        ctx.stroke()
+                                    }
+                                }
+                                break
+                            case TOOLS.DELETE:
+                                const o = state.currentNeuron || state.currentSynapse
+                                if (o) {
+                                    ctx.strokeStyle = '#990000'
+                                    ctx.beginPath()
+                                    ctx.moveTo(o.x - NEURON_RADIUS, o.y - NEURON_RADIUS)
+                                    ctx.lineTo(o.x + NEURON_RADIUS, o.y + NEURON_RADIUS)
+                                    ctx.moveTo(o.x + NEURON_RADIUS, o.y - NEURON_RADIUS)
+                                    ctx.lineTo(o.x - NEURON_RADIUS, o.y + NEURON_RADIUS)
+                                    ctx.stroke()
+                                }
+                                break
+                        }
+
+                    }
+                })
+
+                gt.start()
+
+                //                             Event handling
+                // --------------------------------------------------------------------------------
+
+                document.body.oncontextmenu = () => false
+
+                window.addEventListener('keypress', event => {
+                    event.preventDefault()
+                    state = userInput(state, 'keypress', { 
+                        kbcode: event.code 
+                    })
+                })
+
+                canvas.addEventListener('mousemove', event => {
+                    const rect = canvas.getBoundingClientRect()
+                    state = userInput(state, 'mousemove', {
+                        mouseX: event.clientX - rect.x,
+                        mouseY: event.clientY - rect.y,
+                    })
+                })
+
+                canvas.addEventListener('mousedown', event => {
+                    state = userInput(state, 'mousedown')
+                })
+
+                canvas.addEventListener('mouseup', event => {
+                    state = userInput(state, 'mouseup')
+                })
+
+                const fitCanvas = () => {
+                    canvas.width = canvasWrapper.clientWidth
+                    canvas.height = canvasWrapper.clientHeight
+                }
+                window.addEventListener("resize", fitCanvas);
+                fitCanvas()
+            }
+        </script>
     </body>
 </html>
